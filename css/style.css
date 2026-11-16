@@ -1,0 +1,333 @@
+/* ==========================================================================
+   QUIZ TOWER DEFENSE: Cyber-Command Center Tactical UI
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+:root {
+    --bg-dark: #070b12;
+    --bg-surface: #0f172a;
+    --bg-card: #131d33;
+    --bg-hover: #1e293b;
+    --neon-blue: #38bdf8;
+    --neon-cyan: #06b6d4;
+    --neon-green: #22c55e;
+    --neon-red: #ef4444;
+    --neon-amber: #f59e0b;
+    --neon-purple: #a855f7;
+    --neon-pink: #ec4899;
+    --text-muted: #94a3b8;
+    --border-color: rgba(56, 189, 248, 0.28);
+    --border-glow: 0 0 14px rgba(56, 189, 248, 0.25);
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: #f8fafc;
+    font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 1.05rem;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Subtle Holographic Grid Overlay */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle at 50% 20%, rgba(56, 189, 248, 0.04) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Top Command Header */
+.cyber-header {
+    background: linear-gradient(180deg, #101827 0%, rgba(15, 23, 42, 0.95) 100%);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.6), var(--border-glow);
+    position: relative;
+    z-index: 10;
+}
+
+.game-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.35rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    background: linear-gradient(90deg, #38bdf8, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
+}
+
+.hud-panel {
+    background-color: rgba(15, 23, 42, 0.85);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    backdrop-filter: blur(8px);
+    box-shadow: inset 0 0 12px rgba(56, 189, 248, 0.1);
+}
+
+.hud-stat-box {
+    text-align: center;
+    padding: 2px 14px;
+}
+
+.hud-stat-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+}
+
+.hud-stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+/* Tactical Speed Control Buttons */
+.speed-btn-group .btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    padding: 3px 9px;
+    font-weight: 700;
+    border-color: rgba(148, 163, 184, 0.3);
+}
+
+.speed-btn-group .btn.active {
+    background-color: var(--neon-blue);
+    color: #070b12;
+    border-color: var(--neon-blue);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+}
+
+/* Canvas Wrapper */
+.canvas-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 1040px;
+    margin: 0 auto;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(56, 189, 248, 0.25);
+    border: 1px solid var(--border-color);
+    background-color: #0a0e17;
+}
+
+#gameCanvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1000 / 600;
+    touch-action: none;
+}
+
+/* Modals */
+.modal-content {
+    background-color: var(--bg-surface);
+    color: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(56, 189, 248, 0.3);
+    backdrop-filter: blur(16px);
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+    font-family: 'Orbitron', sans-serif;
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(15, 23, 42, 0.8);
+}
+
+/* Briefing Cards */
+.briefing-card {
+    background-color: var(--bg-card);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 10px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.briefing-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--neon-blue);
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
+}
+
+.briefing-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--neon-blue);
+    box-shadow: 0 8px 24px rgba(56, 189, 248, 0.25);
+}
+
+.briefing-card.card-studied {
+    border-color: var(--neon-green);
+    background: linear-gradient(180deg, rgba(34, 197, 94, 0.08) 0%, var(--bg-card) 100%);
+    box-shadow: 0 0 16px rgba(34, 197, 94, 0.25);
+}
+
+.briefing-card.card-studied::before {
+    background: var(--neon-green);
+    opacity: 1;
+}
+
+.code-box {
+    background-color: #060a12;
+    border-radius: 6px;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    font-family: 'JetBrains Mono', monospace;
+    word-break: break-all;
+}
+
+/* Turret Selection Cards */
+.turret-option-card {
+    background-color: var(--bg-card);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.turret-option-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--neon-blue);
+    box-shadow: 0 8px 24px rgba(56, 189, 248, 0.35);
+    background: rgba(30, 41, 59, 0.95);
+}
+
+/* Quiz UI */
+.quiz-option-btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 8px;
+    background-color: rgba(15, 23, 42, 0.65);
+}
+
+.quiz-option-btn:hover:not(:disabled) {
+    background-color: rgba(56, 189, 248, 0.2);
+    border-color: var(--neon-blue);
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.3);
+    transform: translateX(4px);
+}
+
+.quiz-timer-container {
+    height: 10px;
+    border-radius: 6px;
+    background-color: #060a12;
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+/* Glowing Pulsing Animations */
+.pulse-glow {
+    animation: neonPulse 1.4s infinite alternate;
+}
+
+@keyframes neonPulse {
+    0% {
+        box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+        transform: scale(1);
+    }
+    100% {
+        box-shadow: 0 0 24px rgba(34, 197, 94, 0.95);
+        transform: scale(1.02);
+    }
+}
+
+.super-pulse-glow {
+    animation: superPulse 1.1s infinite alternate;
+}
+
+@keyframes superPulse {
+    0% {
+        box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+    }
+    100% {
+        box-shadow: 0 0 30px rgba(239, 68, 68, 1), 0 0 50px rgba(168, 85, 247, 0.9);
+        transform: scale(1.04);
+    }
+}
+
+/* Inspector Panel Buttons */
+.priority-btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    padding: 4px 8px;
+}
+
+.priority-btn.active {
+    background-color: var(--neon-purple);
+    color: #fff;
+    border-color: var(--neon-purple);
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.7);
+}
+
+/* "Чёрный ящик" Result Cards */
+.mistake-card {
+    background-color: #0d131f;
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    border-radius: 8px;
+}
+
+.theory-box {
+    background-color: rgba(15, 23, 42, 0.95);
+    border-left: 3px solid var(--neon-blue);
+}
+
+/* Toast Container */
+#toastContainer {
+    position: fixed;
+    top: 75px;
+    right: 20px;
+    z-index: 2000;
+    max-width: 380px;
+}
+
+.toast-item {
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+}
+
+::-webkit-scrollbar-track {
+    background: #070b12;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--neon-blue);
+}
