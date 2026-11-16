@@ -1,23 +1,25 @@
 /**
- * Advanced Game Engine: HTML5 Canvas Renderer, Physics, Turrets, Waves, Projectiles, and Particle Systems.
- * Includes Game Speed Multipliers (1x, 2x, 3x), Targeting Priorities (First, Strongest, Closest, Weakest),
- * Detailed Tower Combat Stats, and AAA-Indie Sci-Fi Visuals.
+ * 16-BIT RETRO ARCADE GAME ENGINE
+ * Complete visual overhaul: pixel-art sprites, chunky 8-bit projectiles,
+ * arcade grid, starfield, bounce text, and explosive retro FX.
  */
 class GameEngine {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext('2d');
 
-        // Logical internal resolution (high-def 16:9 ratio)
+        // High-definition canvas with crisp pixel scaling
         this.width = 1000;
         this.height = 600;
         this.canvas.width = this.width;
         this.canvas.height = this.height;
 
+        this.ctx.imageSmoothingEnabled = false;
+
         // Game State
         this.isRunning = false;
         this.isPaused = false;
-        this.gameSpeed = 1.0; // 1.0, 2.0, 3.0
+        this.gameSpeed = 1.0;
         this.lastTime = 0;
 
         // Level Data
@@ -33,6 +35,18 @@ class GameEngine {
         this.projectiles = [];
         this.particles = [];
         this.floatingTexts = [];
+
+        // Background Starfield
+        this.stars = [];
+        for (let i = 0; i < 70; i++) {
+            this.stars.push({
+                x: Math.random() * this.width,
+                y: Math.random() * this.height,
+                size: Math.random() < 0.3 ? 3 : 2,
+                color: Math.random() < 0.4 ? '#fde047' : (Math.random() < 0.7 ? '#22d3ee' : '#ffffff'),
+                twinkle: Math.random() * Math.PI * 2
+            });
+        }
 
         // Base & Player Stats
         this.baseMaxHp = 100;
@@ -55,9 +69,9 @@ class GameEngine {
         this.hoveredSlot = null;
         this.selectedSlot = null;
         this.pathPulseOffset = 0;
-        this.tickTimer = 0;
+        this.globalAnimTimer = 0;
 
-        // Callbacks to UI controller
+        // Callbacks
         this.onSlotClick = null;
         this.onBossHalfway = null;
         this.onWaveCompleted = null;
@@ -69,7 +83,6 @@ class GameEngine {
         this.initInput();
     }
 
-    // --- Input & Coordinates ---
     initInput() {
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         this.canvas.addEventListener('click', (e) => this.handleClick(e));
@@ -95,7 +108,7 @@ class GameEngine {
         this.hoveredSlot = null;
         for (const slot of this.slots) {
             const dist = Math.hypot(slot.x - x, slot.y - y);
-            if (dist <= 30) {
+            if (dist <= 32) {
                 this.hoveredSlot = slot;
                 this.canvas.style.cursor = 'pointer';
                 return;
@@ -110,7 +123,7 @@ class GameEngine {
 
         for (const slot of this.slots) {
             const dist = Math.hypot(slot.x - x, slot.y - y);
-            if (dist <= 30) {
+            if (dist <= 32) {
                 if (this.onSlotClick) {
                     this.onSlotClick(slot);
                 }
@@ -123,13 +136,11 @@ class GameEngine {
         this.gameSpeed = Math.max(0.5, Math.min(3.0, speed));
     }
 
-    // --- Level Initialization ---
     loadLevel(levelConfig) {
         this.levelData = levelConfig;
         this.path = levelConfig.path;
         this.calculatePathMetrics();
 
-        // Initialize Slots
         this.slots = levelConfig.slots.map(s => ({
             id: s.id,
             x: s.x,
@@ -189,7 +200,6 @@ class GameEngine {
         return { ...this.path[this.path.length - 1] };
     }
 
-    // --- Game Control ---
     start() {
         this.isRunning = true;
         this.isPaused = false;
@@ -258,22 +268,21 @@ class GameEngine {
             distance: 0,
             x: this.path[0].x,
             y: this.path[0].y,
-            radius: data.isBoss ? 26 : (data.type === 'tank' ? 18 : (data.type === 'trooper' ? 14 : 11)),
+            radius: data.isBoss ? 28 : (data.type === 'tank' ? 20 : (data.type === 'trooper' ? 15 : 12)),
             slowTimer: 0,
             slowFactor: 1.0,
-            spawnTime: performance.now()
+            animFrame: 0
         };
 
         if (enemy.isBoss) {
             this.activeBoss = enemy;
             if (window.soundManager) window.soundManager.playWarning();
-            this.addFloatingText("ВНИМАНИЕ: БОСС ВОЛНЫ!", enemy.x, enemy.y - 35, '#ef4444', 3500);
+            this.addFloatingText("WARNING: BOSS SPAWNED!", enemy.x, enemy.y - 40, '#f43f5e', 3500);
         }
 
         this.enemies.push(enemy);
     }
 
-    // --- Building, Upgrades & Dismantle ---
     buildTurret(slotId, turretType) {
         const slot = this.slots.find(s => s.id === slotId);
         if (!slot) return false;
@@ -282,37 +291,37 @@ class GameEngine {
         if (turretType === 'plasma') {
             turretConfig = {
                 type: 'plasma',
-                name: 'Быстрая плазма',
+                name: 'Плазма-Бластер',
                 range: 160,
                 fireRate: 3.2,
                 damage: 20,
-                bulletSpeed: 540,
-                color: '#38bdf8',
+                bulletSpeed: 550,
+                color: '#fde047',
                 level: 1
             };
         } else if (turretType === 'cryo') {
             turretConfig = {
                 type: 'cryo',
-                name: 'Крио-башня',
+                name: 'Крио-Призма',
                 range: 145,
                 fireRate: 1.3,
                 damage: 15,
-                bulletSpeed: 400,
+                bulletSpeed: 420,
                 slowFactor: 0.50,
                 slowDuration: 2.5,
-                color: '#06b6d4',
+                color: '#22d3ee',
                 level: 1
             };
         } else if (turretType === 'artillery') {
             turretConfig = {
                 type: 'artillery',
-                name: 'Тяжелая мортира',
+                name: 'Ракетная Мортира',
                 range: 195,
                 fireRate: 0.65,
                 damage: 75,
                 blastRadius: 85,
-                bulletSpeed: 300,
-                color: '#f59e0b',
+                bulletSpeed: 310,
+                color: '#f43f5e',
                 level: 1
             };
         }
@@ -327,13 +336,13 @@ class GameEngine {
             recoil: 0,
             cooldown: 0,
             target: null,
-            targetPriority: 'first', // 'first' | 'strongest' | 'closest' | 'weakest'
+            targetPriority: 'first',
             totalKills: 0,
             totalDamage: 0
         };
 
         this.turrets.push(slot.turret);
-        this.createSparks(slot.x, slot.y, slot.turret.color, 25);
+        this.createPixelSparks(slot.x, slot.y, slot.turret.color, 25);
         if (window.soundManager) window.soundManager.playBuild();
         return true;
     }
@@ -354,8 +363,8 @@ class GameEngine {
             t.blastRadius += 15;
         }
 
-        this.createSparks(slot.x, slot.y, '#facc15', 35);
-        this.addFloatingText(`УРОВЕНЬ ${t.level}!`, slot.x, slot.y - 25, '#facc15', 1800);
+        this.createPixelSparks(slot.x, slot.y, '#fde047', 35);
+        this.addFloatingText(`LEVEL UP! LV.${t.level}`, slot.x, slot.y - 25, '#fde047', 1800);
         if (window.soundManager) window.soundManager.playUpgrade();
         return true;
     }
@@ -369,8 +378,8 @@ class GameEngine {
             this.turrets.splice(idx, 1);
         }
 
-        this.createSparks(slot.x, slot.y, '#94a3b8', 20);
-        this.addFloatingText("ДЕМОНТИРОВАНО", slot.x, slot.y - 20, '#94a3b8', 1500);
+        this.createPixelSparks(slot.x, slot.y, '#ffffff', 20);
+        this.addFloatingText("DISMANTLED", slot.x, slot.y - 20, '#ffffff', 1500);
         slot.turret = null;
         slot.cooldownTimer = 0;
 
@@ -392,8 +401,8 @@ class GameEngine {
         const slot = this.slots.find(s => s.id === slotId);
         if (slot) {
             slot.cooldownTimer = seconds;
-            this.createSparks(slot.x, slot.y, '#ef4444', 18);
-            this.addFloatingText("БЛОКИРОВКА 5с", slot.x, slot.y - 20, '#ef4444', 2000);
+            this.createPixelSparks(slot.x, slot.y, '#f43f5e', 20);
+            this.addFloatingText("LOCKED 5s", slot.x, slot.y - 20, '#f43f5e', 2000);
         }
     }
 
@@ -410,9 +419,9 @@ class GameEngine {
             timer: 0.8
         };
 
-        this.screenShake = 22;
-        this.createExplosion(boss.x, boss.y, 130, '#ef4444');
-        this.addFloatingText(`-50% ХП [СУПЕР-УДАР: ${damage}]`, boss.x, boss.y - 40, '#a855f7', 3000);
+        this.screenShake = 24;
+        this.createPixelExplosion(boss.x, boss.y, 140, '#f43f5e');
+        this.addFloatingText(`-50% HP [SUPER STRIKE: ${damage}]`, boss.x, boss.y - 45, '#fde047', 3000);
 
         if (window.soundManager) window.soundManager.playSuperStrike();
 
@@ -422,14 +431,11 @@ class GameEngine {
         return true;
     }
 
-    // --- Main Game Loop ---
     gameLoop(timestamp) {
         if (!this.isRunning) return;
 
         const rawDelta = (timestamp - this.lastTime) / 1000;
         this.lastTime = timestamp;
-
-        // Apply Game Speed Multiplier (1x, 2x, 3x) and clamp
         const dt = Math.min(rawDelta, 0.1) * this.gameSpeed;
 
         if (!this.isPaused) {
@@ -440,12 +446,11 @@ class GameEngine {
         requestAnimationFrame((t) => this.gameLoop(t));
     }
 
-    // --- Update Logic ---
     update(dt) {
-        this.tickTimer += dt;
-        this.pathPulseOffset = (this.pathPulseOffset + dt * 50) % 70;
+        this.globalAnimTimer += dt * 8;
+        this.pathPulseOffset = (this.pathPulseOffset + dt * 60) % 80;
 
-        // 1. Update Slot Cooldowns
+        // 1. Slots cooldown
         for (const slot of this.slots) {
             if (slot.cooldownTimer > 0) {
                 slot.cooldownTimer = Math.max(0, slot.cooldownTimer - dt);
@@ -462,11 +467,11 @@ class GameEngine {
             }
         }
 
-        // 3. Update Enemies
+        // 3. Enemies
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const e = this.enemies[i];
+            e.animFrame += dt * 10;
 
-            // Slow effect update
             if (e.slowTimer > 0) {
                 e.slowTimer -= dt;
                 e.speed = e.baseSpeed * e.slowFactor;
@@ -478,27 +483,11 @@ class GameEngine {
                 e.speed = e.baseSpeed;
             }
 
-            // Move along path
             e.distance += e.speed * 60 * dt;
             const pt = this.getPointAtDistance(e.distance);
             e.x = pt.x;
             e.y = pt.y;
 
-            // Thruster particle trail for scouts & bosses
-            if (Math.random() < 0.25 * this.gameSpeed) {
-                this.particles.push({
-                    x: e.x + (Math.random() - 0.5) * 6,
-                    y: e.y + (Math.random() - 0.5) * 6,
-                    vx: -(Math.random() * 20),
-                    vy: (Math.random() - 0.5) * 15,
-                    color: e.isBoss ? '#c084fc' : (e.color || '#38bdf8'),
-                    size: 2,
-                    life: 0.3,
-                    maxLife: 0.3
-                });
-            }
-
-            // Check Boss Halfway progress (50%)
             if (e.isBoss && !this.bossHalfwayTriggered) {
                 const progress = e.distance / this.totalPathLength;
                 if (progress >= 0.48) {
@@ -509,32 +498,24 @@ class GameEngine {
                 }
             }
 
-            // Reached Base?
             if (e.distance >= this.totalPathLength) {
                 const dmg = e.isBoss ? 45 : (e.type === 'tank' ? 20 : (e.type === 'trooper' ? 12 : 8));
                 this.damageBase(dmg);
-                this.createExplosion(e.x, e.y, 45, '#ef4444');
+                this.createPixelExplosion(e.x, e.y, 45, '#f43f5e');
                 this.enemies.splice(i, 1);
                 continue;
             }
         }
 
-        // 4. Update Turrets & Target Acquisition with Priorities
+        // 4. Turrets
         for (const t of this.turrets) {
-            if (t.cooldown > 0) {
-                t.cooldown -= dt;
-            }
-            if (t.recoil > 0) {
-                t.recoil = Math.max(0, t.recoil - dt * 10);
-            }
+            if (t.cooldown > 0) t.cooldown -= dt;
+            if (t.recoil > 0) t.recoil = Math.max(0, t.recoil - dt * 12);
 
-            // Filter enemies in range
             const inRange = [];
             for (const e of this.enemies) {
                 const d = Math.hypot(e.x - t.x, e.y - t.y);
-                if (d <= t.range) {
-                    inRange.push({ enemy: e, distToTurret: d });
-                }
+                if (d <= t.range) inRange.push({ enemy: e, distToTurret: d });
             }
 
             let bestEnemy = null;
@@ -547,7 +528,6 @@ class GameEngine {
                 } else if (priority === 'closest') {
                     inRange.sort((a, b) => a.distToTurret - b.distToTurret);
                 } else {
-                    // 'first': furthest distance along path
                     inRange.sort((a, b) => b.enemy.distance - a.enemy.distance);
                 }
                 bestEnemy = inRange[0].enemy;
@@ -557,16 +537,15 @@ class GameEngine {
 
             if (t.target) {
                 t.angle = Math.atan2(t.target.y - t.y, t.target.x - t.x);
-
                 if (t.cooldown <= 0) {
                     this.fireTurret(t, t.target);
                     t.cooldown = 1 / t.fireRate;
-                    t.recoil = 4; // visual recoil kickback
+                    t.recoil = 6;
                 }
             }
         }
 
-        // 5. Update Projectiles
+        // 5. Projectiles
         for (let i = this.projectiles.length - 1; i >= 0; i--) {
             const p = this.projectiles[i];
 
@@ -584,15 +563,16 @@ class GameEngine {
                     p.y += Math.sin(angle) * step;
                     p.life -= dt;
 
-                    // Rocket smoke/fire trail
-                    if (Math.random() < 0.45) {
+                    // Retro Square Smoke
+                    if (Math.random() < 0.5) {
                         this.particles.push({
                             x: p.x,
                             y: p.y,
                             vx: (Math.random() - 0.5) * 15,
                             vy: (Math.random() - 0.5) * 15,
-                            color: Math.random() < 0.5 ? '#f59e0b' : '#94a3b8',
-                            size: 3,
+                            color: Math.random() < 0.5 ? '#fde047' : '#ffffff',
+                            size: 4,
+                            isSquare: true,
                             life: 0.35,
                             maxLife: 0.35
                         });
@@ -620,7 +600,7 @@ class GameEngine {
             }
         }
 
-        // 6. Update Particles
+        // 6. Particles
         for (let i = this.particles.length - 1; i >= 0; i--) {
             const part = this.particles[i];
             part.x += part.vx * dt;
@@ -631,10 +611,11 @@ class GameEngine {
             }
         }
 
-        // 7. Update Floating Combat Text
+        // 7. Floating Texts with Arcade Bounce
         for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
             const ft = this.floatingTexts[i];
             ft.y += ft.vy * dt;
+            ft.vy += 25 * dt; // gravity deceleration
             ft.life -= dt;
             if (ft.life <= 0) {
                 this.floatingTexts.splice(i, 1);
@@ -654,7 +635,7 @@ class GameEngine {
             this.screenShake = Math.max(0, this.screenShake - dt * 25);
         }
 
-        // 10. Check Wave Completion
+        // 10. Wave Completion
         if (this.waveInProgress && this.spawnQueue.length === 0 && this.enemies.length === 0) {
             this.completeWave();
         }
@@ -713,8 +694,7 @@ class GameEngine {
             if (window.soundManager) window.soundManager.playArtilleryLaunch();
         }
 
-        // Muzzle flash particle
-        this.createSparks(muzzleX, muzzleY, turret.color, 4);
+        this.createPixelSparks(muzzleX, muzzleY, turret.color, 6);
     }
 
     hitEnemy(projectile, enemy) {
@@ -725,13 +705,13 @@ class GameEngine {
             projectile.turretSource.totalDamage += projectile.damage;
         }
 
-        this.addFloatingText(`-${projectile.damage}`, enemy.x, enemy.y - 10, projectile.color, 900);
-        this.createSparks(enemy.x, enemy.y, projectile.color, 8);
+        this.addFloatingText(`-${projectile.damage}`, enemy.x, enemy.y - 12, projectile.color, 900);
+        this.createPixelSparks(enemy.x, enemy.y, projectile.color, 8);
 
         if (projectile.type === 'cryo') {
             enemy.slowTimer = projectile.slowDuration;
             enemy.slowFactor = projectile.slowFactor;
-            this.createSparks(enemy.x, enemy.y, '#e0f2fe', 12);
+            this.createPixelSparks(enemy.x, enemy.y, '#22d3ee', 12);
         }
 
         if (enemy.hp <= 0) {
@@ -740,8 +720,8 @@ class GameEngine {
     }
 
     detonateArtillery(projectile) {
-        this.screenShake = 7;
-        this.createExplosion(projectile.targetX, projectile.targetY, projectile.blastRadius, '#f59e0b');
+        this.screenShake = 8;
+        this.createPixelExplosion(projectile.targetX, projectile.targetY, projectile.blastRadius, '#f43f5e');
         if (window.soundManager) window.soundManager.playExplosion();
 
         for (let i = this.enemies.length - 1; i >= 0; i--) {
@@ -755,7 +735,7 @@ class GameEngine {
                     projectile.turretSource.totalDamage += dmg;
                 }
 
-                this.addFloatingText(`-${dmg}`, e.x, e.y - 10, '#f59e0b', 1000);
+                this.addFloatingText(`-${dmg}`, e.x, e.y - 12, '#fde047', 1000);
 
                 if (e.hp <= 0) {
                     this.destroyEnemy(e, projectile.turretSource);
@@ -776,12 +756,12 @@ class GameEngine {
 
         this.score += enemy.rewardScore;
         this.enemiesDefeated++;
-        this.createExplosion(enemy.x, enemy.y, enemy.radius * 2.2, enemy.color);
+        this.createPixelExplosion(enemy.x, enemy.y, enemy.radius * 2.4, enemy.color);
 
         if (enemy.isBoss) {
             this.activeBoss = null;
-            this.screenShake = 16;
-            this.addFloatingText("БОСС УНИЧТОЖЕН! +600", enemy.x, enemy.y - 30, '#facc15', 2500);
+            this.screenShake = 18;
+            this.addFloatingText("BOSS DEFEATED! +600", enemy.x, enemy.y - 30, '#fde047', 2500);
             if (window.soundManager) window.soundManager.playVictory();
         }
 
@@ -790,8 +770,8 @@ class GameEngine {
 
     damageBase(amount) {
         this.baseHp = Math.max(0, this.baseHp - amount);
-        this.screenShake = 12;
-        this.addFloatingText(`БАЗА: -${amount} HP!`, this.path[this.path.length - 1].x - 40, this.path[this.path.length - 1].y - 30, '#ef4444', 1500);
+        this.screenShake = 14;
+        this.addFloatingText(`BASE HIT: -${amount} HP!`, this.path[this.path.length - 1].x - 40, this.path[this.path.length - 1].y - 30, '#f43f5e', 1500);
 
         if (window.soundManager) window.soundManager.playWrong();
 
@@ -849,25 +829,27 @@ class GameEngine {
         }
     }
 
-    // --- Visual FX Helpers ---
-    createSparks(x, y, color, count = 10) {
+    // --- Retro Pixel FX Helpers ---
+    createPixelSparks(x, y, color, count = 10) {
         for (let i = 0; i < count; i++) {
             const angle = Math.random() * Math.PI * 2;
-            const speed = 40 + Math.random() * 120;
+            const speed = 40 + Math.random() * 140;
             this.particles.push({
                 x: x,
                 y: y,
                 vx: Math.cos(angle) * speed,
                 vy: Math.sin(angle) * speed,
                 color: color,
-                size: 2.5 + Math.random() * 2.5,
-                life: 0.35 + Math.random() * 0.3,
-                maxLife: 0.65
+                size: 3.5,
+                isSquare: true,
+                life: 0.35 + Math.random() * 0.25,
+                maxLife: 0.6
             });
         }
     }
 
-    createExplosion(x, y, radius, color) {
+    createPixelExplosion(x, y, radius, color) {
+        // Pixel Expanding Ring
         this.particles.push({
             x: x,
             y: y,
@@ -875,42 +857,44 @@ class GameEngine {
             vy: 0,
             color: color,
             isRing: true,
-            currentRadius: 5,
+            currentRadius: 6,
             maxRadius: radius,
-            life: 0.45,
-            maxLife: 0.45
+            life: 0.4,
+            maxLife: 0.4
         });
 
-        const count = Math.min(32, Math.round(radius * 0.55));
+        // Pixel Fireball debris
+        const count = Math.min(36, Math.round(radius * 0.6));
         for (let i = 0; i < count; i++) {
             const angle = Math.random() * Math.PI * 2;
-            const speed = 50 + Math.random() * (radius * 2.5);
+            const speed = 50 + Math.random() * (radius * 2.8);
             this.particles.push({
                 x: x,
                 y: y,
                 vx: Math.cos(angle) * speed,
                 vy: Math.sin(angle) * speed,
-                color: color,
-                size: 3 + Math.random() * 4,
-                life: 0.4 + Math.random() * 0.35,
-                maxLife: 0.75
+                color: Math.random() < 0.4 ? '#fde047' : color,
+                size: 4 + Math.random() * 4,
+                isSquare: true,
+                life: 0.4 + Math.random() * 0.3,
+                maxLife: 0.7
             });
         }
     }
 
-    addFloatingText(text, x, y, color = '#ffffff', durationMs = 1200) {
+    addFloatingText(text, x, y, color = '#fde047', durationMs = 1200) {
         this.floatingTexts.push({
             text: text,
             x: x,
             y: y,
-            vy: -35,
+            vy: -55,
             color: color,
             life: durationMs / 1000,
             maxLife: durationMs / 1000
         });
     }
 
-    // --- Rendering Pipeline ---
+    // --- Retro Pixel Canvas Rendering ---
     render() {
         this.ctx.save();
 
@@ -920,39 +904,39 @@ class GameEngine {
             this.ctx.translate(ox, oy);
         }
 
-        // 1. Clear & Background Grid
-        this.renderBackground();
+        // 1. Retro Chequered Grid & Starfield
+        this.renderRetroBackground();
 
-        // 2. Render Path & Circuit Waypoints
-        this.renderPath();
+        // 2. Chunky Segmented 8-bit Path
+        this.renderRetroPath();
 
-        // 3. Render Spawn Portal & Base Core
+        // 3. Pixel Spawn Vortex & Mainframe Base
         this.renderPortalAndBase();
 
-        // 4. Render Turret Slots & Hover Overlays
+        // 4. Pixel Turret Slots
         this.renderSlots();
 
-        // 5. Render Turrets
+        // 5. Pixel Turrets with Recoil
         this.renderTurrets();
 
-        // 6. Render Enemies
+        // 6. Retro Pixel Enemy Sprites
         this.renderEnemies();
 
-        // 7. Render Projectiles
+        // 7. Chunky Projectiles
         this.renderProjectiles();
 
-        // 8. Render Particles & Shockwaves
+        // 8. Square Pixel Particles & Explosions
         this.renderParticles();
 
-        // 9. Render Super Strike Ion Beam
+        // 9. Retro Super Strike Rainbow Beam
         if (this.superStrikeBeam) {
             this.renderSuperStrikeBeam();
         }
 
-        // 10. Render Floating Combat Text
+        // 10. Pixel Combat Text
         this.renderFloatingTexts();
 
-        // 11. Tactical Pause Watermark
+        // 11. Arcade Pause Overlay
         if (this.isPaused) {
             this.renderPauseOverlay();
         }
@@ -960,23 +944,32 @@ class GameEngine {
         this.ctx.restore();
     }
 
-    renderBackground() {
-        // Dark futuristic slate background
-        this.ctx.fillStyle = '#0a0e17';
+    renderRetroBackground() {
+        // Deep arcade purple-black
+        this.ctx.fillStyle = '#080414';
         this.ctx.fillRect(0, 0, this.width, this.height);
 
-        // Cybernetic matrix grid with glowing intersection dots
-        this.ctx.strokeStyle = 'rgba(30, 41, 59, 0.45)';
-        this.ctx.lineWidth = 1;
-        const gridSize = 40;
+        // Retro Twinkling Pixel Stars
+        for (const star of this.stars) {
+            const alpha = 0.5 + Math.sin(performance.now() * 0.003 + star.twinkle) * 0.5;
+            this.ctx.fillStyle = star.color;
+            this.ctx.globalAlpha = alpha;
+            this.ctx.fillRect(star.x, star.y, star.size, star.size);
+        }
+        this.ctx.globalAlpha = 1.0;
 
-        for (let x = 0; x <= this.width; x += gridSize) {
+        // Retro Synthwave Horizon Grid
+        this.ctx.strokeStyle = 'rgba(192, 132, 252, 0.15)';
+        this.ctx.lineWidth = 2;
+        const tileSize = 50;
+
+        for (let x = 0; x <= this.width; x += tileSize) {
             this.ctx.beginPath();
             this.ctx.moveTo(x, 0);
             this.ctx.lineTo(x, this.height);
             this.ctx.stroke();
         }
-        for (let y = 0; y <= this.height; y += gridSize) {
+        for (let y = 0; y <= this.height; y += tileSize) {
             this.ctx.beginPath();
             this.ctx.moveTo(0, y);
             this.ctx.lineTo(this.width, y);
@@ -984,67 +977,61 @@ class GameEngine {
         }
     }
 
-    renderPath() {
+    renderRetroPath() {
         if (!this.path || this.path.length < 2) return;
 
-        this.ctx.lineCap = 'round';
-        this.ctx.lineJoin = 'round';
+        // Outer Pixel Border
+        this.ctx.lineCap = 'square';
+        this.ctx.lineJoin = 'miter';
 
-        // Outer Glow Trench
         this.ctx.beginPath();
         this.ctx.moveTo(this.path[0].x, this.path[0].y);
         for (let i = 1; i < this.path.length; i++) {
             this.ctx.lineTo(this.path[i].x, this.path[i].y);
         }
-        this.ctx.strokeStyle = 'rgba(15, 23, 42, 0.95)';
-        this.ctx.lineWidth = 38;
+        this.ctx.strokeStyle = '#000000';
+        this.ctx.lineWidth = 42;
         this.ctx.stroke();
 
-        // Circuit Highway
+        // Chunky Neon Yellow / Magenta Roadway
         this.ctx.beginPath();
         this.ctx.moveTo(this.path[0].x, this.path[0].y);
         for (let i = 1; i < this.path.length; i++) {
             this.ctx.lineTo(this.path[i].x, this.path[i].y);
         }
-        this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
-        this.ctx.lineWidth = 26;
+        this.ctx.strokeStyle = '#f43f5e';
+        this.ctx.lineWidth = 32;
         this.ctx.stroke();
 
-        // Central Neon Spine
+        // Central Dotted Road Spine
         this.ctx.beginPath();
         this.ctx.moveTo(this.path[0].x, this.path[0].y);
         for (let i = 1; i < this.path.length; i++) {
             this.ctx.lineTo(this.path[i].x, this.path[i].y);
         }
-        this.ctx.strokeStyle = 'rgba(14, 165, 233, 0.8)';
-        this.ctx.lineWidth = 4;
+        this.ctx.strokeStyle = '#fde047';
+        this.ctx.lineWidth = 6;
+        this.ctx.setLineDash([12, 12]);
         this.ctx.stroke();
+        this.ctx.setLineDash([]);
 
-        // Animated Travelling Pulse Arrows
-        const pulseSpacing = 70;
+        // Animated Travelling Pixel Directional Arrows
+        const pulseSpacing = 75;
         const totalPoints = Math.floor(this.totalPathLength / pulseSpacing);
         for (let i = 0; i < totalPoints; i++) {
             const dist = (i * pulseSpacing + this.pathPulseOffset) % this.totalPathLength;
             const pt = this.getPointAtDistance(dist);
-            this.ctx.beginPath();
-            this.ctx.arc(pt.x, pt.y, 3.5, 0, Math.PI * 2);
-            this.ctx.fillStyle = '#38bdf8';
-            this.ctx.shadowColor = '#38bdf8';
-            this.ctx.shadowBlur = 8;
-            this.ctx.fill();
-            this.ctx.shadowBlur = 0;
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.fillRect(pt.x - 3, pt.y - 3, 6, 6);
         }
 
-        // Draw Waypoint Circuit Nodes
+        // Waypoint Square Nodes
         for (let i = 0; i < this.path.length; i++) {
             const p = this.path[i];
-            this.ctx.beginPath();
-            this.ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
-            this.ctx.fillStyle = '#0f172a';
-            this.ctx.fill();
-            this.ctx.strokeStyle = '#38bdf8';
-            this.ctx.lineWidth = 2;
-            this.ctx.stroke();
+            this.ctx.fillStyle = '#fde047';
+            this.ctx.fillRect(p.x - 6, p.y - 6, 12, 12);
+            this.ctx.fillStyle = '#000000';
+            this.ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
         }
     }
 
@@ -1053,68 +1040,49 @@ class GameEngine {
         const start = this.path[0];
         const end = this.path[this.path.length - 1];
 
-        // 1. Spawn Portal Vortex
-        const time = performance.now() * 0.003;
+        // 1. Retro Spawn Portal Vortex
+        const time = performance.now() * 0.005;
         this.ctx.save();
         this.ctx.translate(start.x, start.y);
 
-        this.ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
-        this.ctx.lineWidth = 3;
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, 24 + Math.sin(time) * 4, 0, Math.PI * 2);
-        this.ctx.stroke();
+        this.ctx.fillStyle = '#f43f5e';
+        this.ctx.fillRect(-18, -18, 36, 36);
 
-        this.ctx.fillStyle = '#ef4444';
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, 13, 0, Math.PI * 2);
-        this.ctx.shadowColor = '#ef4444';
-        this.ctx.shadowBlur = 14;
-        this.ctx.fill();
-        this.ctx.shadowBlur = 0;
+        this.ctx.rotate(time);
+        this.ctx.fillStyle = '#fde047';
+        this.ctx.fillRect(-12, -12, 24, 24);
 
-        this.ctx.fillStyle = '#f8fafc';
-        this.ctx.font = 'bold 11px Orbitron, sans-serif';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText('СПАВН', 0, -30);
+        this.ctx.fillStyle = '#000000';
+        this.ctx.fillRect(-6, -6, 12, 12);
 
         this.ctx.restore();
 
-        // 2. Base Core Reactor
+        this.ctx.fillStyle = '#fde047';
+        this.ctx.font = 'bold 10px "Press Start 2P", monospace';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('SPAWN', start.x, start.y - 28);
+
+        // 2. Retro Mainframe Defense Core
         this.ctx.save();
         this.ctx.translate(end.x, end.y);
 
-        // Outer Rotating Shield Segments
-        this.ctx.strokeStyle = '#22c55e';
-        this.ctx.lineWidth = 3;
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, 30, 0, Math.PI * 2);
-        this.ctx.stroke();
+        // Outer Pixel Shield
+        this.ctx.strokeStyle = '#4ade80';
+        this.ctx.lineWidth = 4;
+        this.ctx.strokeRect(-24, -24, 48, 48);
 
-        // Pulsing Core
-        const coreSize = 17 + Math.cos(time * 1.5) * 2;
-        const grad = this.ctx.createRadialGradient(0, 0, 2, 0, 0, 26);
-        grad.addColorStop(0, '#ffffff');
-        grad.addColorStop(0.45, '#22c55e');
-        grad.addColorStop(1, '#0f172a');
-        this.ctx.fillStyle = grad;
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, coreSize, 0, Math.PI * 2);
-        this.ctx.shadowColor = '#22c55e';
-        this.ctx.shadowBlur = 18;
-        this.ctx.fill();
-        this.ctx.shadowBlur = 0;
+        // Inner Power Crystal
+        this.ctx.fillStyle = '#22d3ee';
+        this.ctx.fillRect(-14, -14, 28, 28);
 
-        // Mini Base HP bar
-        const hpPercent = this.baseHp / this.baseMaxHp;
-        this.ctx.fillStyle = '#1e293b';
-        this.ctx.fillRect(-26, 36, 52, 7);
-        this.ctx.fillStyle = hpPercent > 0.4 ? '#22c55e' : (hpPercent > 0.2 ? '#f59e0b' : '#ef4444');
-        this.ctx.fillRect(-26, 36, 52 * hpPercent, 7);
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(-6, -6, 12, 12);
 
-        this.ctx.fillStyle = '#f8fafc';
-        this.ctx.font = 'bold 11px Orbitron, sans-serif';
+        // Base HP Text
+        this.ctx.fillStyle = '#4ade80';
+        this.ctx.font = 'bold 10px "Press Start 2P", monospace';
         this.ctx.textAlign = 'center';
-        this.ctx.fillText(`БАЗА: ${this.baseHp}%`, 0, -36);
+        this.ctx.fillText(`BASE:${this.baseHp}%`, 0, -32);
 
         this.ctx.restore();
     }
@@ -1127,55 +1095,46 @@ class GameEngine {
             this.ctx.translate(slot.x, slot.y);
 
             if (slot.turret) {
-                // Show range indicator if hovered
+                // Range box on hover
                 if (isHovered) {
+                    this.ctx.strokeStyle = '#22d3ee';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.setLineDash([8, 6]);
                     this.ctx.beginPath();
                     this.ctx.arc(0, 0, slot.turret.range, 0, Math.PI * 2);
-                    this.ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
-                    this.ctx.fill();
-                    this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
-                    this.ctx.setLineDash([6, 4]);
-                    this.ctx.lineWidth = 1.5;
                     this.ctx.stroke();
                     this.ctx.setLineDash([]);
                 }
             } else if (slot.cooldownTimer > 0) {
-                // Cooldown State
-                this.ctx.beginPath();
-                this.ctx.arc(0, 0, 22, 0, Math.PI * 2);
-                this.ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
-                this.ctx.fill();
-                this.ctx.strokeStyle = '#ef4444';
-                this.ctx.lineWidth = 2;
-                this.ctx.stroke();
+                // Locked Slot
+                this.ctx.fillStyle = '#2a0815';
+                this.ctx.fillRect(-18, -18, 36, 36);
+                this.ctx.strokeStyle = '#f43f5e';
+                this.ctx.lineWidth = 3;
+                this.ctx.strokeRect(-18, -18, 36, 36);
 
-                this.ctx.fillStyle = '#ef4444';
-                this.ctx.font = 'bold 11px sans-serif';
+                this.ctx.fillStyle = '#f43f5e';
+                this.ctx.font = 'bold 8px "Press Start 2P", monospace';
                 this.ctx.textAlign = 'center';
-                this.ctx.fillText(`🔒 ${slot.cooldownTimer.toFixed(1)}s`, 0, 4);
+                this.ctx.fillText(`${slot.cooldownTimer.toFixed(1)}s`, 0, 4);
             } else {
-                // Empty Available Slot
-                this.ctx.beginPath();
-                this.ctx.arc(0, 0, 20, 0, Math.PI * 2);
-                this.ctx.fillStyle = isHovered ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.55)';
-                this.ctx.fill();
+                // Available Slot
+                this.ctx.fillStyle = isHovered ? '#311b59' : '#170d2c';
+                this.ctx.fillRect(-18, -18, 36, 36);
 
-                this.ctx.strokeStyle = isHovered ? '#38bdf8' : 'rgba(148, 163, 184, 0.45)';
-                this.ctx.lineWidth = isHovered ? 2.5 : 1.5;
-                this.ctx.setLineDash(isHovered ? [4, 2] : [3, 3]);
-                this.ctx.stroke();
-                this.ctx.setLineDash([]);
+                this.ctx.strokeStyle = isHovered ? '#fde047' : '#22d3ee';
+                this.ctx.lineWidth = 3;
+                this.ctx.strokeRect(-18, -18, 36, 36);
 
-                this.ctx.fillStyle = isHovered ? '#38bdf8' : 'rgba(148, 163, 184, 0.7)';
-                this.ctx.font = 'bold 16px sans-serif';
-                this.ctx.textAlign = 'center';
-                this.ctx.textBaseline = 'middle';
-                this.ctx.fillText('+', 0, 0);
+                // Pixel Plus
+                this.ctx.fillStyle = isHovered ? '#fde047' : '#22d3ee';
+                this.ctx.fillRect(-2, -8, 4, 16);
+                this.ctx.fillRect(-8, -2, 16, 4);
 
                 if (isHovered) {
-                    this.ctx.font = '10px Orbitron, sans-serif';
-                    this.ctx.fillStyle = '#38bdf8';
-                    this.ctx.fillText('СТРОИТЬ', 0, 32);
+                    this.ctx.font = '8px "Press Start 2P", monospace';
+                    this.ctx.fillStyle = '#fde047';
+                    this.ctx.fillText('BUILD', 0, 30);
                 }
             }
 
@@ -1188,77 +1147,61 @@ class GameEngine {
             this.ctx.save();
             this.ctx.translate(t.x, t.y);
 
-            // Level 2/3 Outer Hologram Ring
-            if (t.level >= 2) {
-                const ringSpeed = performance.now() * 0.002 * (t.level === 3 ? 2 : 1);
-                this.ctx.save();
-                this.ctx.rotate(ringSpeed);
-                this.ctx.strokeStyle = t.color;
-                this.ctx.lineWidth = 1.5;
-                this.ctx.setLineDash([5, 5]);
-                this.ctx.beginPath();
-                this.ctx.arc(0, 0, 23, 0, Math.PI * 2);
-                this.ctx.stroke();
-                this.ctx.restore();
-            }
-
-            // Turret Base Pedestal
-            this.ctx.beginPath();
-            this.ctx.arc(0, 0, 18, 0, Math.PI * 2);
-            this.ctx.fillStyle = '#1e293b';
-            this.ctx.fill();
+            // Beveled Square Base Pedestal
+            this.ctx.fillStyle = '#000000';
+            this.ctx.fillRect(-18, -18, 36, 36);
+            this.ctx.fillStyle = '#21133d';
+            this.ctx.fillRect(-15, -15, 30, 30);
             this.ctx.strokeStyle = t.color;
-            this.ctx.lineWidth = 2.5;
-            this.ctx.stroke();
+            this.ctx.lineWidth = 3;
+            this.ctx.strokeRect(-15, -15, 30, 30);
 
-            // Turret Rotating Head & Barrels with Recoil
+            // Rotating Turret Cannons
             this.ctx.rotate(t.angle);
             const recoilOffset = -(t.recoil || 0);
 
             if (t.type === 'artillery') {
-                // Heavy Double Cannon with recoil
-                this.ctx.fillStyle = '#475569';
-                this.ctx.fillRect(4 + recoilOffset, -7, 18, 5);
-                this.ctx.fillRect(4 + recoilOffset, 2, 18, 5);
+                // Chunky Dual Rocket Pods
+                this.ctx.fillStyle = '#f43f5e';
+                this.ctx.fillRect(4 + recoilOffset, -8, 18, 6);
+                this.ctx.fillRect(4 + recoilOffset, 2, 18, 6);
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(20 + recoilOffset, -7, 3, 4);
+                this.ctx.fillRect(20 + recoilOffset, 3, 3, 4);
             } else if (t.type === 'cryo') {
-                // Cryo Crystal emitter
-                this.ctx.fillStyle = '#06b6d4';
-                this.ctx.beginPath();
-                this.ctx.moveTo(8 + recoilOffset, -6);
-                this.ctx.lineTo(22 + recoilOffset, 0);
-                this.ctx.lineTo(8 + recoilOffset, 6);
-                this.ctx.closePath();
-                this.ctx.fill();
+                // Spinning 8-bit Crystal
+                this.ctx.fillStyle = '#22d3ee';
+                this.ctx.fillRect(6 + recoilOffset, -6, 14, 12);
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fillRect(10 + recoilOffset, -3, 6, 6);
             } else {
-                // Rapid Plasma Cannon
-                this.ctx.fillStyle = '#38bdf8';
-                this.ctx.fillRect(4 + recoilOffset, -3.5, 17, 7);
+                // Plasma Blaster Barrel
+                this.ctx.fillStyle = '#fde047';
+                this.ctx.fillRect(4 + recoilOffset, -4, 18, 8);
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(20 + recoilOffset, -3, 3, 6);
             }
 
-            // Central Core Dome
-            this.ctx.beginPath();
-            this.ctx.arc(0, 0, 9.5, 0, Math.PI * 2);
+            // Central Core
             this.ctx.fillStyle = t.color;
-            this.ctx.shadowColor = t.color;
-            this.ctx.shadowBlur = 10;
-            this.ctx.fill();
-            this.ctx.shadowBlur = 0;
+            this.ctx.fillRect(-8, -8, 16, 16);
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.fillRect(-4, -4, 8, 8);
 
             this.ctx.restore();
 
-            // Level Stars & Priority Tag Badge above turret
+            // Level Stars & Priority Tag
             this.ctx.save();
             this.ctx.translate(t.x, t.y);
-            this.ctx.fillStyle = '#facc15';
-            this.ctx.font = 'bold 11px sans-serif';
+            this.ctx.fillStyle = '#fde047';
+            this.ctx.font = 'bold 9px "Press Start 2P", monospace';
             this.ctx.textAlign = 'center';
             const stars = t.level === 3 ? '★★★' : (t.level === 2 ? '★★' : '★');
-            this.ctx.fillText(stars, 0, -23);
+            this.ctx.fillText(stars, 0, -24);
 
-            // Small priority indicator dot
             if (t.targetPriority && t.targetPriority !== 'first') {
-                this.ctx.fillStyle = '#a855f7';
-                this.ctx.font = '9px sans-serif';
+                this.ctx.fillStyle = '#c084fc';
+                this.ctx.font = '7px "Press Start 2P", monospace';
                 const pTag = t.targetPriority === 'strongest' ? 'HP' : (t.targetPriority === 'closest' ? 'NEAR' : 'LOW');
                 this.ctx.fillText(`[${pTag}]`, 0, 28);
             }
@@ -1273,64 +1216,71 @@ class GameEngine {
             this.ctx.translate(e.x, e.y);
 
             const isSlowed = (e.slowTimer > 0);
+            const bounce = Math.sin(e.animFrame) * 2;
 
-            // Boss Pulsing Aura and Orbiting Defense Nodes
             if (e.isBoss) {
-                const auraPulse = Math.sin(performance.now() * 0.006) * 6;
-                this.ctx.beginPath();
-                this.ctx.arc(0, 0, e.radius + 14 + auraPulse, 0, Math.PI * 2);
-                this.ctx.fillStyle = 'rgba(168, 85, 247, 0.25)';
-                this.ctx.fill();
-                this.ctx.strokeStyle = '#a855f7';
-                this.ctx.lineWidth = 2.5;
-                this.ctx.stroke();
+                // Boss Giant 16-Bit Demon Sprites
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(-e.radius - 2, -e.radius - 2 + bounce, (e.radius + 2) * 2, (e.radius + 2) * 2);
 
-                // Orbiting Shield Node
-                const orbitAngle = performance.now() * 0.004;
-                const ox = Math.cos(orbitAngle) * (e.radius + 10);
-                const oy = Math.sin(orbitAngle) * (e.radius + 10);
-                this.ctx.beginPath();
-                this.ctx.arc(ox, oy, 4, 0, Math.PI * 2);
-                this.ctx.fillStyle = '#f43f5e';
-                this.ctx.fill();
+                this.ctx.fillStyle = isSlowed ? '#22d3ee' : '#f43f5e';
+                this.ctx.fillRect(-e.radius, -e.radius + bounce, e.radius * 2, e.radius * 2);
+
+                // Boss Horns / Cannons
+                this.ctx.fillStyle = '#fde047';
+                this.ctx.fillRect(-e.radius + 4, -e.radius - 8 + bounce, 8, 8);
+                this.ctx.fillRect(e.radius - 12, -e.radius - 8 + bounce, 8, 8);
+
+                // Multi-eyes
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillRect(-12, -4 + bounce, 8, 8);
+                this.ctx.fillRect(4, -4 + bounce, 8, 8);
+                this.ctx.fillStyle = '#000000';
+                this.ctx.fillRect(-10, -2 + bounce, 4, 4);
+                this.ctx.fillRect(6, -2 + bounce, 4, 4);
+            } else if (e.type === 'tank') {
+                // Pixel Battle Tank
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(-18, -14 + bounce, 36, 28);
+                this.ctx.fillStyle = isSlowed ? '#22d3ee' : e.color;
+                this.ctx.fillRect(-16, -12 + bounce, 32, 24);
+                // Turret hatch
+                this.ctx.fillStyle = '#fde047';
+                this.ctx.fillRect(-6, -6 + bounce, 12, 12);
+            } else if (e.type === 'trooper') {
+                // Pixel Armored Walker
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(-14, -14 + bounce, 28, 28);
+                this.ctx.fillStyle = isSlowed ? '#22d3ee' : e.color;
+                this.ctx.fillRect(-12, -12 + bounce, 24, 24);
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillRect(-6, -6 + bounce, 12, 6);
+            } else {
+                // Pixel Scout Drone (Blinking Wings)
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(-12, -10 + bounce, 24, 20);
+                this.ctx.fillStyle = isSlowed ? '#22d3ee' : e.color;
+                this.ctx.fillRect(-10, -8 + bounce, 20, 16);
+                this.ctx.fillStyle = '#fde047';
+                this.ctx.fillRect(-4, -4 + bounce, 8, 8);
             }
 
-            // Enemy Body
-            this.ctx.beginPath();
-            this.ctx.arc(0, 0, e.radius, 0, Math.PI * 2);
-            this.ctx.fillStyle = isSlowed ? '#67e8f9' : e.color;
-            this.ctx.shadowColor = isSlowed ? '#67e8f9' : e.color;
-            this.ctx.shadowBlur = e.isBoss ? 18 : 10;
-            this.ctx.fill();
-            this.ctx.shadowBlur = 0;
-
-            this.ctx.strokeStyle = '#0f172a';
-            this.ctx.lineWidth = 2;
-            this.ctx.stroke();
-
-            // Enemy Icon
-            this.ctx.fillStyle = '#0f172a';
-            this.ctx.font = `bold ${e.isBoss ? 15 : 10}px sans-serif`;
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-            this.ctx.fillText(e.isBoss ? '👑' : (e.type === 'tank' ? '🛡️' : '⚡'), 0, 0);
-
             // Health Bar
-            const barWidth = e.isBoss ? 58 : (e.radius * 2 + 8);
-            const barHeight = e.isBoss ? 6 : 4;
-            const barY = -e.radius - 11;
+            const barWidth = e.isBoss ? 64 : (e.radius * 2 + 8);
+            const barHeight = 6;
+            const barY = -e.radius - 14 + bounce;
             const hpRatio = Math.max(0, e.hp / e.maxHp);
 
-            this.ctx.fillStyle = '#0f172a';
-            this.ctx.fillRect(-barWidth / 2, barY, barWidth, barHeight);
+            this.ctx.fillStyle = '#000000';
+            this.ctx.fillRect(-barWidth / 2 - 2, barY - 2, barWidth + 4, barHeight + 4);
 
-            this.ctx.fillStyle = hpRatio > 0.5 ? '#22c55e' : (hpRatio > 0.2 ? '#f59e0b' : '#ef4444');
+            this.ctx.fillStyle = hpRatio > 0.5 ? '#4ade80' : (hpRatio > 0.2 ? '#fde047' : '#f43f5e');
             this.ctx.fillRect(-barWidth / 2, barY, barWidth * hpRatio, barHeight);
 
             if (e.isBoss) {
-                this.ctx.fillStyle = '#f8fafc';
-                this.ctx.font = 'bold 10px Orbitron, sans-serif';
-                this.ctx.fillText(e.name, 0, barY - 6);
+                this.ctx.fillStyle = '#fde047';
+                this.ctx.font = 'bold 8px "Press Start 2P", monospace';
+                this.ctx.fillText(e.name, 0, barY - 8);
             }
 
             this.ctx.restore();
@@ -1341,26 +1291,22 @@ class GameEngine {
         for (const p of this.projectiles) {
             this.ctx.save();
             if (p.type === 'artillery') {
-                this.ctx.beginPath();
-                this.ctx.arc(p.x, p.y, 5.5, 0, Math.PI * 2);
-                this.ctx.fillStyle = '#f59e0b';
-                this.ctx.shadowColor = '#f59e0b';
-                this.ctx.shadowBlur = 12;
-                this.ctx.fill();
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(p.x - 5, p.y - 5, 10, 10);
+                this.ctx.fillStyle = '#f43f5e';
+                this.ctx.fillRect(p.x - 4, p.y - 4, 8, 8);
+                this.ctx.fillStyle = '#fde047';
+                this.ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
             } else if (p.type === 'cryo') {
-                this.ctx.beginPath();
-                this.ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
-                this.ctx.fillStyle = '#38bdf8';
-                this.ctx.shadowColor = '#38bdf8';
-                this.ctx.shadowBlur = 10;
-                this.ctx.fill();
+                this.ctx.fillStyle = '#22d3ee';
+                this.ctx.fillRect(p.x - 4, p.y - 4, 8, 8);
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
             } else {
-                this.ctx.beginPath();
-                this.ctx.arc(p.x, p.y, 3.8, 0, Math.PI * 2);
-                this.ctx.fillStyle = '#38bdf8';
-                this.ctx.shadowColor = '#38bdf8';
-                this.ctx.shadowBlur = 10;
-                this.ctx.fill();
+                this.ctx.fillStyle = '#fde047';
+                this.ctx.fillRect(p.x - 4, p.y - 4, 8, 8);
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
             }
             this.ctx.restore();
         }
@@ -1374,16 +1320,12 @@ class GameEngine {
 
             if (part.isRing) {
                 const curR = (1 - alpha) * part.maxRadius;
-                this.ctx.beginPath();
-                this.ctx.arc(part.x, part.y, curR, 0, Math.PI * 2);
                 this.ctx.strokeStyle = part.color;
-                this.ctx.lineWidth = 3;
-                this.ctx.stroke();
+                this.ctx.lineWidth = 4;
+                this.ctx.strokeRect(part.x - curR, part.y - curR, curR * 2, curR * 2);
             } else {
-                this.ctx.beginPath();
-                this.ctx.arc(part.x, part.y, part.size, 0, Math.PI * 2);
                 this.ctx.fillStyle = part.color;
-                this.ctx.fill();
+                this.ctx.fillRect(part.x - part.size / 2, part.y - part.size / 2, part.size, part.size);
             }
             this.ctx.restore();
         }
@@ -1397,20 +1339,19 @@ class GameEngine {
         this.ctx.save();
         this.ctx.globalAlpha = alpha;
 
-        const grad = this.ctx.createLinearGradient(x - 25, 0, x + 25, 0);
-        grad.addColorStop(0, 'rgba(168, 85, 247, 0.1)');
-        grad.addColorStop(0.5, 'rgba(255, 255, 255, 0.98)');
-        grad.addColorStop(1, 'rgba(168, 85, 247, 0.1)');
+        // Rainbow 16-Bit Orbital Laser Beam
+        const colors = ['#f43f5e', '#fb923c', '#fde047', '#4ade80', '#22d3ee', '#c084fc'];
+        const bandWidth = 8;
+        const startX = x - (colors.length * bandWidth) / 2;
 
-        this.ctx.fillStyle = grad;
-        this.ctx.fillRect(x - 30, 0, 60, y);
+        colors.forEach((col, idx) => {
+            this.ctx.fillStyle = col;
+            this.ctx.fillRect(startX + idx * bandWidth, 0, bandWidth, y);
+        });
 
-        this.ctx.beginPath();
-        this.ctx.ellipse(x, y, 75, 30, 0, 0, Math.PI * 2);
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        this.ctx.shadowColor = '#a855f7';
-        this.ctx.shadowBlur = 35;
-        this.ctx.fill();
+        // Pixel Ground Blast
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(x - 50, y - 16, 100, 32);
 
         this.ctx.restore();
     }
@@ -1420,11 +1361,10 @@ class GameEngine {
             this.ctx.save();
             const alpha = Math.max(0, ft.life / ft.maxLife);
             this.ctx.globalAlpha = alpha;
-            this.ctx.font = 'bold 13px Rajdhani, sans-serif';
+            this.ctx.font = 'bold 11px "Press Start 2P", monospace';
+            this.ctx.fillStyle = '#000000';
+            this.ctx.fillText(ft.text, ft.x + 2, ft.y + 2);
             this.ctx.fillStyle = ft.color;
-            this.ctx.textAlign = 'center';
-            this.ctx.shadowColor = '#000000';
-            this.ctx.shadowBlur = 4;
             this.ctx.fillText(ft.text, ft.x, ft.y);
             this.ctx.restore();
         }
@@ -1432,20 +1372,17 @@ class GameEngine {
 
     renderPauseOverlay() {
         this.ctx.save();
-        this.ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+        this.ctx.fillStyle = 'rgba(11, 7, 20, 0.85)';
         this.ctx.fillRect(0, 0, this.width, this.height);
 
-        this.ctx.fillStyle = '#38bdf8';
-        this.ctx.font = 'bold 24px Orbitron, sans-serif';
+        this.ctx.fillStyle = '#fde047';
+        this.ctx.font = 'bold 24px "Press Start 2P", monospace';
         this.ctx.textAlign = 'center';
-        this.ctx.shadowColor = '#38bdf8';
-        this.ctx.shadowBlur = 12;
-        this.ctx.fillText('⏸ ТАКТИЧЕСКАЯ ПАУЗА // КВИЗ-РЕЖИМ', this.width / 2, this.height / 2);
-        this.ctx.shadowBlur = 0;
+        this.ctx.fillText('*** PAUSE ***', this.width / 2, this.height / 2 - 15);
 
-        this.ctx.fillStyle = '#94a3b8';
-        this.ctx.font = '14px Rajdhani, sans-serif';
-        this.ctx.fillText('Поле боя заморожено. Ответьте на теоретический вопрос для развертывания системы.', this.width / 2, this.height / 2 + 35);
+        this.ctx.fillStyle = '#22d3ee';
+        this.ctx.font = '12px "Press Start 2P", monospace';
+        this.ctx.fillText('SOLVE QUIZ TO CONTINUE DEFENSE', this.width / 2, this.height / 2 + 25);
         this.ctx.restore();
     }
 }

@@ -66,7 +66,8 @@ class AppController {
             'resultsModal',
             'levelSelectModal',
             'codexModal',
-            'achievementsModal'
+            'achievementsModal',
+            'teacherModal'
         ];
         modalIds.forEach(id => {
             const el = document.getElementById(id);
@@ -268,8 +269,69 @@ class AppController {
             });
         });
 
+        // Teacher Mode Button
+        const teacherBtn = document.getElementById('teacherModeBtn');
+        if (teacherBtn) {
+            teacherBtn.addEventListener('click', () => {
+                window.soundManager.playClick();
+                this.engine.pause();
+                this.openTeacherModal();
+                this.modals.teacherModal.show();
+            });
+        }
+
+        // Teacher Form: Add Question
+        const addQForm = document.getElementById('addQuestionForm');
+        if (addQForm) {
+            addQForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleTeacherAddQuestion();
+            });
+        }
+
+        // Teacher Form: Create Level
+        const createLvlForm = document.getElementById('createLevelForm');
+        if (createLvlForm) {
+            createLvlForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleTeacherCreateLevel();
+            });
+        }
+
+        // Teacher: Export JSON
+        const exportBtn = document.getElementById('teacherExportBtn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                const jsonArea = document.getElementById('teacherJsonArea');
+                jsonArea.value = JSON.stringify(GAME_LEVELS, null, 2);
+                this.showToast('📋 База заданий экспортирована в JSON!', 'success');
+            });
+        }
+
+        // Teacher: Import JSON
+        const importBtn = document.getElementById('teacherImportBtn');
+        if (importBtn) {
+            importBtn.addEventListener('click', () => {
+                this.handleTeacherImportJSON();
+            });
+        }
+
+        // Teacher: Reset
+        const resetBtn = document.getElementById('teacherResetBtn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                if (confirm('Сбросить все созданные темы и вернуть 3 стандартных школьных предмета?')) {
+                    localStorage.removeItem('qtd_teacher_custom_levels');
+                    reloadGameLevels();
+                    this.loadLevel(0);
+                    this.openTeacherModal();
+                    this.showToast('🔄 Все предметы сброшены к стандартным!', 'info');
+                }
+            });
+        }
+
         // Safe resume when modals are closed
-        ['turretSelectModal', 'turretInspectorModal', 'levelSelectModal', 'codexModal', 'achievementsModal'].forEach(id => {
+        ['turretSelectModal', 'turretInspectorModal', 'levelSelectModal', 'codexModal', 'achievementsModal', 'teacherModal'].forEach(id => {
             const el = document.getElementById(id);
             if (el) {
                 el.addEventListener('hidden.bs.modal', () => {
@@ -875,6 +937,257 @@ class AppController {
             `;
             container.appendChild(section);
         });
+    }
+
+    // --- TEACHER CONSTRUCTOR & CUSTOM ASSIGNMENTS ---
+    openTeacherModal() {
+        const select = document.getElementById('teacherQLevelSelect');
+        if (select) {
+            select.innerHTML = '';
+            GAME_LEVELS.forEach((lvl) => {
+                const opt = document.createElement('option');
+                opt.value = lvl.id;
+                opt.textContent = lvl.title;
+                select.appendChild(opt);
+            });
+        }
+        const jsonArea = document.getElementById('teacherJsonArea');
+        if (jsonArea) {
+            jsonArea.value = JSON.stringify(GAME_LEVELS, null, 2);
+        }
+    }
+
+    handleTeacherAddQuestion() {
+        const levelId = document.getElementById('teacherQLevelSelect').value;
+        const difficulty = document.getElementById('teacherQDifficulty').value;
+        const text = document.getElementById('teacherQText').value.trim();
+        const opt0 = document.getElementById('teacherQOpt0').value.trim();
+        const opt1 = document.getElementById('teacherQOpt1').value.trim();
+        const opt2 = document.getElementById('teacherQOpt2').value.trim();
+        const opt3 = document.getElementById('teacherQOpt3').value.trim();
+        const correctIndex = parseInt(document.getElementById('teacherQCorrect').value, 10);
+        const explanation = document.getElementById('teacherQExplanation').value.trim() || 'Правильный ответ подтвержден учителем.';
+
+        if (!text || !opt0 || !opt1 || !opt2 || !opt3) {
+            this.showToast('⚠️ Заполните все поля вопроса и вариантов ответа!', 'danger');
+            return;
+        }
+
+        const targetLvl = GAME_LEVELS.find(l => l.id === levelId);
+        if (!targetLvl) return;
+
+        let turretType = 'plasma';
+        if (difficulty === 'medium') turretType = 'cryo';
+        if (difficulty === 'hard') turretType = 'artillery';
+
+        const newQuestion = {
+            id: 'tq_' + Math.random().toString(36).substr(2, 9),
+            difficulty: difficulty,
+            cardId: targetLvl.briefing[0].id,
+            turretType: turretType,
+            question: text,
+            options: [opt0, opt1, opt2, opt3],
+            correctIndex: correctIndex,
+            explanation: explanation
+        };
+
+        targetLvl.questions.push(newQuestion);
+
+        try {
+            const customStored = localStorage.getItem('qtd_teacher_custom_levels');
+            let customList = customStored ? JSON.parse(customStored) : [];
+            const existingCustom = customList.find(l => l.id === targetLvl.id);
+            if (existingCustom) {
+                existingCustom.questions = targetLvl.questions;
+            } else {
+                customList.push(targetLvl);
+            }
+            localStorage.setItem('qtd_teacher_custom_levels', JSON.stringify(customList));
+        } catch (e) {
+            console.warn('Teacher save error:', e);
+        }
+
+        this.showToast('✅ Вопрос успешно добавлен в базу урока!', 'success');
+        document.getElementById('teacherQText').value = '';
+        document.getElementById('teacherQOpt0').value = '';
+        document.getElementById('teacherQOpt1').value = '';
+        document.getElementById('teacherQOpt2').value = '';
+        document.getElementById('teacherQOpt3').value = '';
+        document.getElementById('teacherQExplanation').value = '';
+    }
+
+    handleTeacherCreateLevel() {
+        const title = document.getElementById('teacherLvlTitle').value.trim();
+        const desc = document.getElementById('teacherLvlDesc').value.trim();
+
+        if (!title || !desc) {
+            this.showToast('⚠️ Введите название и описание предмета!', 'danger');
+            return;
+        }
+
+        const newLvlId = 'lvl_custom_' + Date.now();
+        const newLevel = {
+            id: newLvlId,
+            title: title,
+            description: desc,
+            mapTheme: 'arcade-cyan',
+            isCustom: true,
+            path: [
+                { x: 30, y: 150 },
+                { x: 260, y: 150 },
+                { x: 260, y: 380 },
+                { x: 520, y: 380 },
+                { x: 520, y: 180 },
+                { x: 760, y: 180 },
+                { x: 760, y: 440 },
+                { x: 970, y: 440 }
+            ],
+            slots: [
+                { id: "c-1", x: 140, y: 80 },
+                { id: "c-2", x: 140, y: 230 },
+                { id: "c-3", x: 380, y: 300 },
+                { id: "c-4", x: 380, y: 460 },
+                { id: "c-5", x: 640, y: 110 },
+                { id: "c-6", x: 640, y: 260 },
+                { id: "c-7", x: 880, y: 360 },
+                { id: "c-8", x: 880, y: 510 }
+            ],
+            briefing: [
+                {
+                    id: newLvlId + '_b1',
+                    turretType: "plasma",
+                    turretName: "Быстрая башня",
+                    title: "1. Основы темы: Правило №1",
+                    content: "Базовые понятия и определения темы. Внимательно читайте условие задания.",
+                    formula: "Главное правило: Теория проверяется практикой!"
+                },
+                {
+                    id: newLvlId + '_b2',
+                    turretType: "cryo",
+                    turretName: "Крио-башня",
+                    title: "2. Углубленный анализ: Правило №2",
+                    content: "Замедление и контроль ошибок при вычислении или разборе задачи.",
+                    formula: "Контроль решения: Проверка обратным действием."
+                },
+                {
+                    id: newLvlId + '_b3',
+                    turretType: "artillery",
+                    turretName: "Тяжелая мортира",
+                    title: "3. Комплексные задачи: Правило №3",
+                    content: "Решение составных задач повышенной сложности в несколько действий.",
+                    formula: "Алгоритм: Декомпозиция сложной задачи на простые подзадачи."
+                },
+                {
+                    id: newLvlId + '_b4',
+                    turretType: "super",
+                    turretName: "Протокол «Супер-удар»",
+                    title: "4. Финальный срез знаний: Правило №4",
+                    content: "Обобщение темы и финальный тест против Босса ошибок.",
+                    formula: "Успех = Внимательность + Знание формул и определений."
+                }
+            ],
+            waves: [
+                {
+                    waveNumber: 1,
+                    name: "Разминка: Простые задания",
+                    spawnInterval: 1400,
+                    enemies: [
+                        { type: "scout", count: 8, hp: 60, speed: 1.45, rewardScore: 50, color: "#fde047", name: "Простая ошибка" }
+                    ]
+                },
+                {
+                    waveNumber: 2,
+                    name: "Средняя сложность: Практика",
+                    spawnInterval: 1200,
+                    enemies: [
+                        { type: "scout", count: 6, hp: 70, speed: 1.5, rewardScore: 60, color: "#fde047", name: "Недочет" },
+                        { type: "trooper", count: 8, hp: 130, speed: 1.05, rewardScore: 100, color: "#fb923c", name: "Сложное задание" }
+                    ]
+                },
+                {
+                    waveNumber: 3,
+                    name: "Контрольная работа: Босс темы",
+                    spawnInterval: 1100,
+                    enemies: [
+                        { type: "trooper", count: 8, hp: 150, speed: 1.1, rewardScore: 110, color: "#fb923c", name: "Олимпиадный вопрос" },
+                        { type: "tank", count: 4, hp: 280, speed: 0.75, rewardScore: 180, color: "#f43f5e", name: "Комплексная задача" },
+                        { type: "boss", count: 1, hp: 1200, speed: 0.52, rewardScore: 700, color: "#a855f7", isBoss: true, name: "Босс: Контрольная работа" }
+                    ]
+                }
+            ],
+            questions: [
+                {
+                    id: 'q_' + Math.random().toString(36).substr(2, 9),
+                    difficulty: "easy",
+                    cardId: newLvlId + '_b1',
+                    turretType: "plasma",
+                    question: "Контрольный вопрос 1 по теме: " + title,
+                    options: ["Верный ответ 1", "Неверный вариант", "Еще вариант", "Другой вариант"],
+                    correctIndex: 0,
+                    explanation: "Это контрольный вопрос, добавленный учителем."
+                },
+                {
+                    id: 'q_' + Math.random().toString(36).substr(2, 9),
+                    difficulty: "medium",
+                    cardId: newLvlId + '_b2',
+                    turretType: "cryo",
+                    question: "Контрольный вопрос 2 по теме: " + title,
+                    options: ["Верный ответ 2", "Неверно", "Ошибочно", "Мимо"],
+                    correctIndex: 0,
+                    explanation: "Объяснение учителя по теме."
+                },
+                {
+                    id: 'q_' + Math.random().toString(36).substr(2, 9),
+                    difficulty: "hard",
+                    cardId: newLvlId + '_b3',
+                    turretType: "artillery",
+                    question: "Сложный вопрос для мортиры по теме: " + title,
+                    options: ["Правильный ответ", "Ложный ответ", "Искажение", "Неверно"],
+                    correctIndex: 0,
+                    explanation: "Учительское пояснение для закрепления."
+                },
+                {
+                    id: 'q_' + Math.random().toString(36).substr(2, 9),
+                    difficulty: "hard",
+                    cardId: newLvlId + '_b4',
+                    turretType: "super",
+                    question: "Финальный вопрос Супер-удара по теме: " + title,
+                    options: ["Главный правильный ответ", "Неверно 1", "Неверно 2", "Неверно 3"],
+                    correctIndex: 0,
+                    explanation: "Ответ на супер-вопрос наносит 50% урона Боссу!"
+                }
+            ]
+        };
+
+        saveTeacherLevel(newLevel);
+        this.modals.teacherModal.hide();
+        this.loadLevel(GAME_LEVELS.length - 1);
+        this.showToast(`🎉 Новая тема «${title}» создана и загружена!`, 'success');
+        document.getElementById('teacherLvlTitle').value = '';
+        document.getElementById('teacherLvlDesc').value = '';
+    }
+
+    handleTeacherImportJSON() {
+        const text = document.getElementById('teacherJsonArea').value.trim();
+        if (!text) {
+            this.showToast('⚠️ Вставьте JSON в текстовое поле!', 'danger');
+            return;
+        }
+
+        try {
+            const parsed = JSON.parse(text);
+            if (!Array.isArray(parsed)) {
+                throw new Error('JSON должен быть массивом уровней');
+            }
+
+            localStorage.setItem('qtd_teacher_custom_levels', JSON.stringify(parsed));
+            reloadGameLevels();
+            this.loadLevel(0);
+            this.openTeacherModal();
+            this.showToast('✅ База тем успешно импортирована!', 'success');
+        } catch (e) {
+            this.showToast('❌ Ошибка парсинга JSON: ' + e.message, 'danger');
+        }
     }
 
     // --- PHASE 4: RESULTS & MISTAKE REVIEW ("ЧЁРНЫЙ ЯЩИК") ---

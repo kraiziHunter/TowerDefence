@@ -3,98 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Башня и Волны — Cyberpunk Quiz Tower Defense</title>
+    <title>Башня и Волны — Школьный Quiz Tower Defense</title>
     <!-- Bootstrap 5 CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Google Fonts -->
+    <!-- Retro Arcade Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-    <!-- Custom Cyberpunk Tactical Styles -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+    <!-- Radical Retro Arcade Styles -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-    <!-- Cyber-Command Tactical Top Header -->
-    <header class="cyber-header py-2 px-3 mb-3">
+    <!-- Retro Arcade Top Marquee Header -->
+    <header class="arcade-header mb-3">
         <div class="container-fluid d-flex flex-wrap justify-content-between align-items-center gap-2">
-            <!-- Game Title & Level Indicator -->
+            <!-- Game Title & Subject Badge -->
             <div class="d-flex align-items-center gap-3">
-                <span class="fs-4">🛡️</span>
+                <span class="fs-3">📚</span>
                 <div>
-                    <h1 class="game-title mb-0">БАШНЯ И ВОЛНЫ</h1>
-                    <span class="badge bg-dark border border-info-subtle text-info font-monospace small" id="hudLevelTitle">Уровень 1</span>
+                    <h1 class="game-title">БАШНЯ И ВОЛНЫ</h1>
+                    <span class="arcade-badge" id="hudLevelTitle">1. МАТЕМАТИКА</span>
                 </div>
 
-                <div class="d-flex gap-1 ms-2">
-                    <button class="btn btn-outline-secondary btn-sm" id="levelSelectBtn" title="Сменить уровень">
-                        🗺️ Уровни
+                <div class="d-flex gap-2 ms-2">
+                    <button class="btn btn-arcade btn-arcade-dark btn-sm" id="levelSelectBtn" title="Выбор предмета">
+                        ПРЕДМЕТЫ
                     </button>
-                    <button class="btn btn-outline-info btn-sm" id="codexBtn" title="Открыть базу знаний">
-                        📖 Кодекс
+                    <button class="btn btn-arcade btn-arcade-cyan btn-sm" id="codexBtn" title="Учебник и правила">
+                        УЧЕБНИК
                     </button>
-                    <button class="btn btn-outline-warning btn-sm" id="achievementsBtn" title="Достижения">
-                        🏆 Достижения
+                    <button class="btn btn-arcade btn-arcade-yellow btn-sm" id="teacherModeBtn" title="Конструктор заданий для учителя">
+                        👩‍🏫 УЧИТЕЛЬ
+                    </button>
+                    <button class="btn btn-arcade btn-arcade-dark btn-sm" id="achievementsBtn" title="Достижения">
+                        🏆
                     </button>
                 </div>
             </div>
 
-            <!-- Stats HUD Panel -->
-            <div class="hud-panel d-flex align-items-center px-3 py-1 gap-3">
-                <!-- Base HP -->
+            <!-- Arcade HUD Panel -->
+            <div class="arcade-hud d-flex align-items-center gap-3">
+                <!-- Base HP Shield Meter -->
                 <div class="hud-stat-box" style="min-width: 140px;">
-                    <div class="hud-stat-label">Целостность Базы</div>
-                    <div class="progress mt-1" style="height: 10px; background-color: #070b12;">
-                        <div id="baseHpBar" class="progress-bar bg-success" style="width: 100%;"></div>
+                    <div class="hud-stat-label">ЗАЩИТА БАЗЫ</div>
+                    <div class="arcade-progress-bar mt-1">
+                        <div id="baseHpBar" class="arcade-progress-fill" style="width: 100%;"></div>
                     </div>
-                    <div class="text-end small text-light font-monospace" id="baseHpText">100 / 100</div>
+                    <div class="text-center small font-monospace mt-1" id="baseHpText" style="font-size: 0.75rem;">100 / 100</div>
                 </div>
 
                 <!-- Wave Counter -->
-                <div class="hud-stat-box border-start border-secondary-subtle">
-                    <div class="hud-stat-label">Волна</div>
+                <div class="hud-stat-box border-start border-dark">
+                    <div class="hud-stat-label">РАУНД</div>
                     <div class="hud-stat-value text-info" id="hudWave">1/3</div>
                 </div>
 
-                <!-- Enemies on field -->
-                <div class="hud-stat-box border-start border-secondary-subtle">
-                    <div class="hud-stat-label">Угрозы</div>
+                <!-- Threats -->
+                <div class="hud-stat-box border-start border-dark">
+                    <div class="hud-stat-label">ОШИБКИ</div>
                     <div class="hud-stat-value text-danger" id="hudEnemies">0</div>
                 </div>
 
-                <!-- Score -->
-                <div class="hud-stat-box border-start border-secondary-subtle">
-                    <div class="hud-stat-label">Очки</div>
-                    <div class="hud-stat-value text-warning" id="hudScore">0</div>
+                <!-- 1P Score -->
+                <div class="hud-stat-box border-start border-dark">
+                    <div class="hud-stat-label">ОЧКИ</div>
+                    <div class="hud-stat-value text-warning" id="hudScore">00000</div>
                 </div>
             </div>
 
-            <!-- Action Controls, Speed, Audio -->
+            <!-- Speed & Action Controls -->
             <div class="d-flex align-items-center gap-2">
-                <!-- Speed Controls (Pause, 1x, 2x, 3x) -->
-                <div class="btn-group speed-btn-group" role="group">
-                    <button type="button" class="btn btn-outline-secondary" id="speedPauseBtn" title="Пауза">⏸</button>
-                    <button type="button" class="btn btn-outline-secondary active" id="speed1xBtn">1x</button>
-                    <button type="button" class="btn btn-outline-secondary" id="speed2xBtn">2x</button>
-                    <button type="button" class="btn btn-outline-secondary" id="speed3xBtn">3x</button>
+                <!-- Speed Button Group -->
+                <div class="d-flex">
+                    <button type="button" class="speed-btn-arcade" id="speedPauseBtn" title="Пауза">⏸</button>
+                    <button type="button" class="speed-btn-arcade active" id="speed1xBtn">1X</button>
+                    <button type="button" class="speed-btn-arcade" id="speed2xBtn">2X</button>
+                    <button type="button" class="speed-btn-arcade" id="speed3xBtn">3X</button>
                 </div>
 
-                <!-- Super Strike Trigger Button -->
-                <button class="btn btn-danger btn-sm d-none super-pulse-glow fw-bold px-3" id="superStrikeBtn">
+                <!-- Super Strike Button -->
+                <button class="btn btn-arcade btn-arcade-red btn-sm d-none super-pulse-glow" id="superStrikeBtn">
                     ⚡ СУПЕР-УДАР!
                 </button>
 
-                <!-- Next Wave Button -->
-                <button class="btn btn-primary btn-sm px-3" id="startWaveBtn">
-                    🚀 Начать волну 1
+                <!-- Start Wave Button -->
+                <button class="btn btn-arcade btn-arcade-green btn-sm" id="startWaveBtn">
+                    ▶ НАЧАТЬ ВОЛНУ 1
                 </button>
 
                 <!-- Audio Toggles -->
-                <div class="btn-group">
-                    <button class="btn btn-outline-info btn-sm" id="muteToggleBtn" title="Звуковые эффекты">
+                <div class="d-flex gap-1">
+                    <button class="btn btn-arcade btn-arcade-cyan btn-sm px-2" id="muteToggleBtn" title="Звуки">
                         🔊
                     </button>
-                    <button class="btn btn-outline-primary btn-sm" id="musicToggleBtn" title="Эмбиент-музыка">
+                    <button class="btn btn-arcade btn-arcade-yellow btn-sm px-2" id="musicToggleBtn" title="Музыка">
                         🎵
                     </button>
                 </div>
@@ -102,41 +105,38 @@
         </div>
     </header>
 
-    <!-- Main Game Canvas Container -->
+    <!-- Main Game Canvas with Arcade Bezel -->
     <main class="container-fluid px-3">
         <div class="canvas-wrapper">
             <canvas id="gameCanvas"></canvas>
         </div>
     </main>
 
-    <!-- Floating Tactical Notification Toasts -->
+    <!-- Floating Arcade Notifications -->
     <div id="toastContainer"></div>
 
     <!-- ========================================================================= -->
-    <!-- MODAL 1: PHASE 1 BRIEFING / RECONNAISSANCE ("Брифинг / Разведка")         -->
+    <!-- MODAL 1: PHASE 1 BRIEFING / ОБУЧАЮЩИЕ КАРТОЧКИ                            -->
     <!-- ========================================================================= -->
-    <div class="modal fade" id="briefingModal" tabindex="-1" aria-labelledby="briefingModalTitle" aria-hidden="true">
+    <div class="modal fade" id="briefingModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header border-bottom-0 pb-0">
+                <div class="modal-header border-bottom-0 pb-1">
                     <div>
-                        <span class="badge bg-info text-dark mb-1">ФАЗА 1: ТАКТИЧЕСКИЙ БРИФИНГ</span>
-                        <h4 class="modal-title text-light fw-bold" id="briefingTitle">Уровень 1</h4>
+                        <span class="badge bg-warning text-dark mb-1">ФАЗА 1: УЧЕБНЫЙ МАТЕРИАЛ</span>
+                        <h4 class="modal-title fw-bold text-light" id="briefingTitle">ТЕМА УРОКА</h4>
                     </div>
                 </div>
                 <div class="modal-body">
                     <p class="text-secondary small mb-3" id="briefingDesc">
-                        Отразите атаку киберпреступников, изучив чертежи и защитные протоколы.
+                        Изучите правила и формулы урока для разблокировки защитных башен.
                     </p>
 
-                    <!-- Cards Container -->
-                    <div class="row" id="briefingCardsContainer">
-                        <!-- Dynamically filled with educational cards -->
-                    </div>
+                    <div class="row" id="briefingCardsContainer"></div>
                 </div>
                 <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" class="btn btn-success px-4 py-2 fw-bold w-100" id="startDefenseBtn" disabled>
-                        🔒 Изучите все чертежи для старта
+                    <button type="button" class="btn btn-arcade btn-arcade-green w-100 py-3" id="startDefenseBtn" disabled>
+                        🔒 ИЗУЧИТЕ ВСЕ ПРАВИЛА (0/4)
                     </button>
                 </div>
             </div>
@@ -150,39 +150,39 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">🛠️ Выбор турели для установки</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    <h5 class="modal-title">🛠️ ВЫБОР ЗАЩИТНОЙ БАШНИ</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                 </div>
                 <div class="modal-body">
                     <p class="text-secondary small mb-3">
-                        Для установки требуется ответить на 1 вопрос из изученной теории за 15 секунд:
+                        Для установки ответьте на 1 вопрос из пройденной темы за 15 секунд:
                     </p>
                     <div class="d-flex flex-column gap-2">
-                        <!-- Option 1: Fast Plasma -->
-                        <div class="p-3 turret-option-card d-flex justify-content-between align-items-center" data-turret-type="plasma">
+                        <!-- Option 1: Fast -->
+                        <div class="turret-option-card d-flex justify-content-between align-items-center" data-turret-type="plasma">
                             <div>
-                                <div class="fw-bold text-info">⚡ Быстрая плазма</div>
-                                <small class="text-secondary">Скорострельная турель (3.2 выстр/сек), средний урон по одиночным целям.</small>
+                                <div class="fw-bold text-warning">⚡ БЫСТРАЯ БАШНЯ</div>
+                                <small class="text-secondary">Высокая скорость стрельбы, средний точечный урон.</small>
                             </div>
-                            <span class="badge bg-info text-dark">Легкий вопрос</span>
+                            <span class="badge bg-warning text-dark">ЛЕГКИЙ ВОПРОС</span>
                         </div>
 
                         <!-- Option 2: Cryo -->
-                        <div class="p-3 turret-option-card d-flex justify-content-between align-items-center" data-turret-type="cryo">
+                        <div class="turret-option-card d-flex justify-content-between align-items-center" data-turret-type="cryo">
                             <div>
-                                <div class="fw-bold" style="color: #06b6d4;">❄️ Крио-башня</div>
-                                <small class="text-secondary">Замедляет врагов на 50%, облегчая уничтожение тяжелых целей.</small>
+                                <div class="fw-bold text-cyan" style="color: #22d3ee;">❄️ КРИО-БАШНЯ</div>
+                                <small class="text-secondary">Замедляет движение ошибок на 50%.</small>
                             </div>
-                            <span class="badge bg-primary">Средний вопрос</span>
+                            <span class="badge bg-primary">СРЕДНИЙ ВОПРОС</span>
                         </div>
 
                         <!-- Option 3: Heavy Artillery -->
-                        <div class="p-3 turret-option-card d-flex justify-content-between align-items-center" data-turret-type="artillery">
+                        <div class="turret-option-card d-flex justify-content-between align-items-center" data-turret-type="artillery">
                             <div>
-                                <div class="fw-bold text-warning">💣 Тяжелая мортира</div>
-                                <small class="text-secondary">Колоссальный AoE урон осколками по скоплению угроз.</small>
+                                <div class="fw-bold text-danger">💣 ТЯЖЕЛАЯ МОРТИРА</div>
+                                <small class="text-secondary">Мощный урон по площади (AoE) осколками.</small>
                             </div>
-                            <span class="badge bg-warning text-dark">Сложный вопрос</span>
+                            <span class="badge bg-danger">СЛОЖНЫЙ ВОПРОС</span>
                         </div>
                     </div>
                 </div>
@@ -198,56 +198,54 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <div>
-                        <span class="badge bg-info mb-1" id="inspectorTurretLevelBadge">Уровень 1</span>
-                        <h5 class="modal-title mb-0" id="inspectorTurretTitle">Инспектор турели</h5>
+                        <span class="badge bg-warning text-dark mb-1" id="inspectorTurretLevelBadge">УРОВЕНЬ 1</span>
+                        <h5 class="modal-title mb-0" id="inspectorTurretTitle">ПАРАМЕТРЫ БАШНИ</h5>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- Live Turret Combat Stats -->
                     <div class="row g-2 text-center mb-3">
                         <div class="col-4">
-                            <div class="p-2 bg-dark rounded border border-secondary-subtle">
-                                <div class="small text-secondary">Урон</div>
-                                <div class="fw-bold text-light font-monospace" id="inspectorDmg">0</div>
+                            <div class="p-2 bg-dark border border-secondary">
+                                <div class="small text-secondary" style="font-size: 0.7rem;">УРОН</div>
+                                <div class="fw-bold text-warning font-monospace" id="inspectorDmg">0</div>
                             </div>
                         </div>
                         <div class="col-4">
-                            <div class="p-2 bg-dark rounded border border-secondary-subtle">
-                                <div class="small text-secondary">Скорость</div>
-                                <div class="fw-bold text-info font-monospace" id="inspectorRate">0/сек</div>
+                            <div class="p-2 bg-dark border border-secondary">
+                                <div class="small text-secondary" style="font-size: 0.7rem;">СКОРОСТЬ</div>
+                                <div class="fw-bold text-cyan font-monospace" id="inspectorRate">0/с</div>
                             </div>
                         </div>
                         <div class="col-4">
-                            <div class="p-2 bg-dark rounded border border-secondary-subtle">
-                                <div class="small text-secondary">Радиус</div>
-                                <div class="fw-bold text-warning font-monospace" id="inspectorRange">0px</div>
+                            <div class="p-2 bg-dark border border-secondary">
+                                <div class="small text-secondary" style="font-size: 0.7rem;">РАДИУС</div>
+                                <div class="fw-bold text-light font-monospace" id="inspectorRange">0px</div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-between text-secondary small mb-3 p-2 bg-dark rounded border border-secondary-subtle">
-                        <span>Уничтожено врагов: <strong class="text-light" id="inspectorKills">0</strong></span>
-                        <span>Всего нанесено урона: <strong class="text-light" id="inspectorTotalDmg">0</strong></span>
+                    <div class="d-flex justify-content-between text-secondary small mb-3 p-2 bg-dark border border-secondary">
+                        <span>Уничтожено: <strong class="text-warning" id="inspectorKills">0</strong></span>
+                        <span>Всего урона: <strong class="text-info" id="inspectorTotalDmg">0</strong></span>
                     </div>
 
-                    <!-- Targeting Priority Switcher -->
                     <div class="mb-3">
-                        <label class="form-label small text-secondary fw-bold">ПРИОРИТЕТ АТАКИ ЦЕЛИ:</label>
+                        <label class="form-label small text-warning">ПРИОРИТЕТ АТАКИ:</label>
                         <div class="btn-group w-100" role="group">
-                            <button type="button" class="btn btn-outline-secondary priority-btn active" data-priority="first">Первый</button>
-                            <button type="button" class="btn btn-outline-secondary priority-btn" data-priority="strongest">Сильный (Босс)</button>
-                            <button type="button" class="btn btn-outline-secondary priority-btn" data-priority="closest">Ближний</button>
-                            <button type="button" class="btn btn-outline-secondary priority-btn" data-priority="weakest">Слабый</button>
+                            <button type="button" class="btn btn-arcade btn-arcade-dark btn-sm priority-btn active" data-priority="first">ПЕРВЫЙ</button>
+                            <button type="button" class="btn btn-arcade btn-arcade-dark btn-sm priority-btn" data-priority="strongest">БОСС</button>
+                            <button type="button" class="btn btn-arcade btn-arcade-dark btn-sm priority-btn" data-priority="closest">БЛИЖНИЙ</button>
+                            <button type="button" class="btn btn-arcade btn-arcade-dark btn-sm priority-btn" data-priority="weakest">СЛАБЫЙ</button>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer d-flex justify-content-between">
-                    <button type="button" class="btn btn-outline-danger btn-sm" id="inspectorDismantleBtn">
-                        🗑️ Демонтировать
+                    <button type="button" class="btn btn-arcade btn-arcade-red btn-sm" id="inspectorDismantleBtn">
+                        ДЕМОНТИРОВАТЬ
                     </button>
-                    <button type="button" class="btn btn-success btn-sm" id="inspectorUpgradeBtn">
-                        ⭐️ Улучшить турель
+                    <button type="button" class="btn btn-arcade btn-arcade-green btn-sm" id="inspectorUpgradeBtn">
+                        УЛУЧШИТЬ
                     </button>
                 </div>
             </div>
@@ -255,39 +253,33 @@
     </div>
 
     <!-- ========================================================================= -->
-    <!-- MODAL 4: ACTIVE RECALL QUIZ ("Квиз-бой")                                  -->
+    <!-- MODAL 4: ACTIVE RECALL RETRO QUIZ                                         -->
     <!-- ========================================================================= -->
     <div class="modal fade" id="quizModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-bottom-0 pb-1">
                     <div class="w-100 d-flex justify-content-between align-items-center">
-                        <h5 class="modal-title fw-bold" id="quizModalTitle">Развертывание системы</h5>
-                        <span class="badge bg-info" id="quizDifficultyBadge">Легкий вопрос</span>
+                        <h5 class="modal-title fw-bold" id="quizModalTitle">ПРОВЕРКА ЗНАНИЙ</h5>
+                        <span class="badge bg-warning text-dark" id="quizDifficultyBadge">ЛЕГКИЙ</span>
                     </div>
                 </div>
 
                 <div class="modal-body pt-2">
-                    <!-- Timer countdown bar -->
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="small text-secondary">Таймер активации:</span>
-                        <span class="fw-bold text-info font-monospace small" id="quizTimerText">15.0s</span>
+                        <span class="small text-warning" style="font-size: 0.75rem;">ТАЙМЕР ОТВЕТА:</span>
+                        <span class="fw-bold text-danger font-monospace" id="quizTimerText">15.0s</span>
                     </div>
                     <div class="quiz-timer-container mb-3">
-                        <div id="quizTimerBar" class="progress-bar bg-info" style="width: 100%;"></div>
+                        <div id="quizTimerBar" class="arcade-progress-fill bg-warning" style="width: 100%;"></div>
                     </div>
 
-                    <!-- Question text -->
-                    <h5 class="text-light mb-3" id="quizQuestionText">Текст вопроса загружается...</h5>
-
-                    <!-- Answer Options -->
-                    <div id="quizAnswersContainer" class="d-flex flex-column">
-                        <!-- Populated by app.js -->
-                    </div>
+                    <h5 class="text-light mb-3" id="quizQuestionText" style="line-height: 1.5;">Вопрос...</h5>
+                    <div id="quizAnswersContainer" class="d-flex flex-column"></div>
                 </div>
                 <div class="modal-footer border-top-0 pt-0">
-                    <small class="text-secondary w-100 text-center">
-                        ⏳ Внимание: игра на тактической паузе. Ошибка блокирует слот на 5 сек!
+                    <small class="text-secondary w-100 text-center" style="font-size: 0.7rem;">
+                        ⚠️ ТАКТИЧЕСКАЯ ПАУЗА. ОШИБКА БЛОКИРУЕТ СЛОТ НА 5 СЕК!
                     </small>
                 </div>
             </div>
@@ -295,55 +287,53 @@
     </div>
 
     <!-- ========================================================================= -->
-    <!-- MODAL 5: PHASE 4 RESULTS & "ЧЁРНЫЙ ЯЩИК" (Разбор ошибок)                   -->
+    <!-- MODAL 5: RESULTS & MISTAKE DEBRIEFING ("ЧЁРНЫЙ ЯЩИК")                     -->
     <!-- ========================================================================= -->
     <div class="modal fade" id="resultsModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
                     <div>
-                        <span class="badge bg-success mb-1" id="resultsBadge">ПОБЕДА</span>
-                        <h4 class="modal-title fw-bold" id="resultsHeader">МИССИЯ ВЫПОЛНЕНА</h4>
+                        <span class="badge bg-success mb-1" id="resultsBadge">УРОК ПРОЙДЕН!</span>
+                        <h4 class="modal-title fw-bold" id="resultsHeader">ИТОГИ ТЕСТИРОВАНИЯ</h4>
                     </div>
                 </div>
                 <div class="modal-body">
-                    <!-- High-level Summary Metrics -->
                     <div class="row g-2 mb-4 text-center">
                         <div class="col-3">
-                            <div class="p-2 bg-dark rounded border border-secondary-subtle">
-                                <div class="small text-secondary">Счет</div>
+                            <div class="p-2 bg-dark border border-secondary">
+                                <div class="small text-secondary" style="font-size: 0.65rem;">ОЧКИ</div>
                                 <div class="fs-5 fw-bold text-warning font-monospace" id="resScore">0</div>
                             </div>
                         </div>
                         <div class="col-3">
-                            <div class="p-2 bg-dark rounded border border-secondary-subtle">
-                                <div class="small text-secondary">Уничтожено</div>
-                                <div class="fs-5 fw-bold text-info font-monospace" id="resKills">0</div>
+                            <div class="p-2 bg-dark border border-secondary">
+                                <div class="small text-secondary" style="font-size: 0.65rem;">ОШИБКИ ОТБИТЫ</div>
+                                <div class="fs-5 fw-bold text-cyan font-monospace" id="resKills">0</div>
                             </div>
                         </div>
                         <div class="col-3">
-                            <div class="p-2 bg-dark rounded border border-secondary-subtle">
-                                <div class="small text-secondary">База</div>
+                            <div class="p-2 bg-dark border border-secondary">
+                                <div class="small text-secondary" style="font-size: 0.65rem;">ЗАЩИТА БАЗЫ</div>
                                 <div class="fs-5 fw-bold text-success font-monospace" id="resBaseHp">100%</div>
                             </div>
                         </div>
                         <div class="col-3">
-                            <div class="p-2 bg-dark rounded border border-secondary-subtle">
-                                <div class="small text-secondary">Точность квиза</div>
+                            <div class="p-2 bg-dark border border-secondary">
+                                <div class="small text-secondary" style="font-size: 0.65rem;">ТОЧНОСТЬ</div>
                                 <div class="fs-5 fw-bold text-light font-monospace" id="resAccuracy">100%</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Mistake Analysis Section: "Чёрный ящик" -->
                     <div id="mistakesReviewContainer"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-light" id="restartLevelBtn">
-                        🔄 Переиграть уровень
+                    <button type="button" class="btn btn-arcade btn-arcade-dark" id="restartLevelBtn">
+                        ПЕРЕИГРАТЬ
                     </button>
-                    <button type="button" class="btn btn-primary" id="nextLevelBtn">
-                        ➡️ Следующий уровень
+                    <button type="button" class="btn btn-arcade btn-arcade-green" id="nextLevelBtn">
+                        СЛЕДУЮЩИЙ УРОК ▶
                     </button>
                 </div>
             </div>
@@ -351,57 +341,185 @@
     </div>
 
     <!-- ========================================================================= -->
-    <!-- MODAL 6: THEORY CODEX / KNOWLEDGE ARCHIVE (Кибер-Кодекс)                  -->
+    <!-- MODAL 6: TEACHER CONSTRUCTOR ("КАБИНЕТ УЧИТЕЛЯ")                          -->
+    <!-- ========================================================================= -->
+    <div class="modal fade" id="teacherModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <span class="badge bg-warning text-dark mb-1">РЕЖИМ ПЕДАГОГА</span>
+                        <h4 class="modal-title fw-bold text-light">👩‍🏫 КАБИНЕТ УЧИТЕЛЯ</h4>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Nav Tabs -->
+                    <ul class="nav nav-pills mb-3 gap-2" id="teacherTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="btn btn-arcade btn-arcade-cyan btn-sm active" id="tab-add-q" data-bs-toggle="pill" data-bs-target="#teacherAddQPane" type="button">
+                                ➕ ДОБАВИТЬ ВОПРОС
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="btn btn-arcade btn-arcade-yellow btn-sm" id="tab-create-lvl" data-bs-toggle="pill" data-bs-target="#teacherCreateLvlPane" type="button">
+                                🆕 НОВАЯ ТЕМА
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="btn btn-arcade btn-arcade-dark btn-sm" id="tab-json" data-bs-toggle="pill" data-bs-target="#teacherJsonPane" type="button">
+                                💾 ЭКСПОРТ / ИМПОРТ
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="teacherTabContent">
+                        <!-- TAB 1: ADD QUESTION -->
+                        <div class="tab-pane fade show active" id="teacherAddQPane">
+                            <form id="addQuestionForm">
+                                <div class="mb-3">
+                                    <label class="form-label text-warning small fw-bold">Выберите тему / предмет:</label>
+                                    <select class="form-select bg-dark text-light border-secondary" id="teacherQLevelSelect"></select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-warning small fw-bold">Сложность вопроса и тип турели:</label>
+                                    <select class="form-select bg-dark text-light border-secondary" id="teacherQDifficulty">
+                                        <option value="easy">Легкий (Разблокирует: Быстрая башня)</option>
+                                        <option value="medium">Средний (Разблокирует: Крио-башня)</option>
+                                        <option value="hard">Сложный (Разблокирует: Тяжелая мортира / Супер-удар)</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-warning small fw-bold">Текст вопроса:</label>
+                                    <textarea class="form-control bg-dark text-light border-secondary" id="teacherQText" rows="2" placeholder="Например: Сколько будет 7 * 8?" required></textarea>
+                                </div>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label small text-info">Вариант [A]:</label>
+                                        <input type="text" class="form-control bg-dark text-light border-secondary" id="teacherQOpt0" placeholder="56" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small text-info">Вариант [B]:</label>
+                                        <input type="text" class="form-control bg-dark text-light border-secondary" id="teacherQOpt1" placeholder="48" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small text-info">Вариант [C]:</label>
+                                        <input type="text" class="form-control bg-dark text-light border-secondary" id="teacherQOpt2" placeholder="64" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small text-info">Вариант [D]:</label>
+                                        <input type="text" class="form-control bg-dark text-light border-secondary" id="teacherQOpt3" placeholder="54" required>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-success small fw-bold">Правильный вариант ответа:</label>
+                                    <select class="form-select bg-dark text-success border-success" id="teacherQCorrect">
+                                        <option value="0">Вариант [A]</option>
+                                        <option value="1">Вариант [B]</option>
+                                        <option value="2">Вариант [C]</option>
+                                        <option value="3">Вариант [D]</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-secondary small fw-bold">Пояснение к ответу (для «Чёрного ящика»):</label>
+                                    <input type="text" class="form-control bg-dark text-light border-secondary" id="teacherQExplanation" placeholder="По таблице умножения 7 * 8 = 56.">
+                                </div>
+                                <button type="submit" class="btn btn-arcade btn-arcade-green w-100 py-2">
+                                    💾 СОХРАНИТЬ ВОПРОС В ТЕМУ
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- TAB 2: CREATE NEW LEVEL -->
+                        <div class="tab-pane fade" id="teacherCreateLvlPane">
+                            <form id="createLevelForm">
+                                <div class="mb-3">
+                                    <label class="form-label text-warning small fw-bold">Название темы / урока:</label>
+                                    <input type="text" class="form-control bg-dark text-light border-secondary" id="teacherLvlTitle" placeholder="Например: 4. Биология: Строение клетки" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-warning small fw-bold">Краткое описание темы:</label>
+                                    <input type="text" class="form-control bg-dark text-light border-secondary" id="teacherLvlDesc" placeholder="Изучите органеллы, мембраны и процессы фотосинтеза." required>
+                                </div>
+                                <div class="alert alert-dark border-secondary small text-secondary mb-3">
+                                    💡 При создании темы автоматически генерируется карта обороны с 3 волнами и 4 правилами Брифинга, в которые вы можете сразу добавлять вопросы!
+                                </div>
+                                <button type="submit" class="btn btn-arcade btn-arcade-yellow w-100 py-2">
+                                    ✨ СОЗДАТЬ И ЗАПУСТИТЬ ТЕМУ
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- TAB 3: EXPORT / IMPORT -->
+                        <div class="tab-pane fade" id="teacherJsonPane">
+                            <div class="mb-3">
+                                <label class="form-label text-warning small fw-bold">Экспорт / Импорт базы вопросов (JSON):</label>
+                                <textarea class="form-control bg-dark text-light font-monospace small" id="teacherJsonArea" rows="8" placeholder="Здесь отобразится JSON текущих тем или вставьте сюда JSON для импорта..."></textarea>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-arcade btn-arcade-cyan btn-sm flex-grow-1" id="teacherExportBtn">
+                                    📋 ЭКСПОРТ В JSON
+                                </button>
+                                <button type="button" class="btn btn-arcade btn-arcade-green btn-sm flex-grow-1" id="teacherImportBtn">
+                                    📥 ИМПОРТИРОВАТЬ ИЗ JSON
+                                </button>
+                                <button type="button" class="btn btn-arcade btn-arcade-red btn-sm" id="teacherResetBtn" title="Сбросить к исходным 3 предметам">
+                                    СБРОС
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 7: THEORY CODEX (УЧЕБНИК)                                           -->
     <!-- ========================================================================= -->
     <div class="modal fade" id="codexModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">📖 Кибер-Кодекс: База теоретических знаний</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    <h5 class="modal-title">📖 ШКОЛЬНЫЙ УЧЕБНИК: ПРАВИЛА И ФОРМУЛЫ</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                 </div>
-                <div class="modal-body" id="codexContentContainer">
-                    <!-- Populated dynamically with all levels theory -->
-                </div>
+                <div class="modal-body" id="codexContentContainer"></div>
             </div>
         </div>
     </div>
 
     <!-- ========================================================================= -->
-    <!-- MODAL 7: ACHIEVEMENTS MODAL                                               -->
+    <!-- MODAL 8: ACHIEVEMENTS                                                     -->
     <!-- ========================================================================= -->
     <div class="modal fade" id="achievementsModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">🏆 Достижения защитника</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    <h5 class="modal-title">🏆 ДОСТИЖЕНИЯ УЧЕНИКА</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                 </div>
-                <div class="modal-body" id="achievementsListContainer">
-                    <!-- Populated dynamically -->
-                </div>
+                <div class="modal-body" id="achievementsListContainer"></div>
             </div>
         </div>
     </div>
 
     <!-- ========================================================================= -->
-    <!-- MODAL 8: LEVEL SELECTOR                                                   -->
+    <!-- MODAL 9: SUBJECT / LEVEL SELECTOR                                         -->
     <!-- ========================================================================= -->
     <div class="modal fade" id="levelSelectModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">🗺️ Выберите уровень обучения</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    <h5 class="modal-title">🗺️ ВЫБЕРИТЕ ШКОЛЬНЫЙ ПРЕДМЕТ</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                 </div>
-                <div class="modal-body" id="levelListContainer">
-                    <!-- Populated dynamically -->
-                </div>
+                <div class="modal-body" id="levelListContainer"></div>
             </div>
         </div>
     </div>
 
-    <!-- Scripts (Vanilla ES6, modular, zero external game libraries) -->
+    <!-- Scripts (Vanilla ES6, zero external game engines) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/audio.js"></script>
     <script src="js/levels.js"></script>
