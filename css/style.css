@@ -436,3 +436,16 @@ body::after {
 ::-webkit-scrollbar-thumb:hover {
     background: #fde047;
 }
+
+/* Level Select Card Interactive Styling */
+.level-select-card {
+    border: 3px solid #334155;
+    box-shadow: 4px 4px 0px #000;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.level-select-card:hover {
+    transform: translateY(-2px);
+    border-color: #fde047 !important;
+}
+

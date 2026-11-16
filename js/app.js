@@ -38,7 +38,7 @@ class AppController {
             { id: 'ach_streak_5', title: 'Безупречный аналитик', icon: '🎯', desc: 'Ответьте на 5 теоретических вопросов подряд без единой ошибки.' },
             { id: 'ach_flawless', title: 'Цитадель данных', icon: '🏰', desc: 'Завершите раунд обороны со 100% целостностью Базы.' },
             { id: 'ach_max_upgrade', title: 'Максимальный разгон', icon: '🔧', desc: 'Улучшите любую оборонительную турель до 3-го уровня.' },
-            { id: 'ach_all_levels', title: 'Магистр кибербезопасности', icon: '🎖️', desc: 'Успешно пройдите все доступные уровни в игре.' }
+            { id: 'ach_all_levels', title: 'Золотой медалист', icon: '🎖️', desc: 'Успешно защитите базу по всем школьным предметам!' }
         ];
 
         // Modals (Bootstrap 5)
@@ -52,13 +52,30 @@ class AppController {
         this.bindEvents();
         this.bindEngineCallbacks();
         this.updateAudioButtonsUI();
+        this.updatePlayerNameUI();
 
-        // Load initial level
-        this.loadLevel(this.currentLevelIndex);
+        // Load level in background without opening briefing modal
+        this.loadLevel(this.currentLevelIndex, false);
+
+        // Pre-fill existing pupil name if saved
+        const savedName = localStorage.getItem('qtd_player_name') || '';
+        const savedGrade = localStorage.getItem('qtd_player_grade') || '';
+        const nameInput = document.getElementById('playerNameInput');
+        const gradeInput = document.getElementById('playerGradeInput');
+        if (nameInput && savedName) nameInput.value = savedName;
+        if (gradeInput && savedGrade) gradeInput.value = savedGrade;
+
+        // Show Player Login as mandatory first step
+        setTimeout(() => {
+            if (this.modals.playerLoginModal) {
+                this.modals.playerLoginModal.show();
+            }
+        }, 150);
     }
 
     initModals() {
         const modalIds = [
+            'playerLoginModal',
             'briefingModal',
             'turretSelectModal',
             'turretInspectorModal',
@@ -77,7 +94,63 @@ class AppController {
         });
     }
 
+    updatePlayerNameUI() {
+        const savedName = localStorage.getItem('qtd_player_name');
+        const grade = localStorage.getItem('qtd_player_grade');
+        const hudName = document.getElementById('hudPlayerName');
+        if (hudName) {
+            if (savedName) {
+                hudName.textContent = grade ? `${savedName} [${grade}]` : savedName;
+            } else {
+                hudName.textContent = 'ВХОД';
+            }
+        }
+    }
+
     bindEvents() {
+        // Player Profile / Change Name Button
+        const profileBtn = document.getElementById('playerProfileBtn');
+        if (profileBtn) {
+            profileBtn.addEventListener('click', () => {
+                window.soundManager.playClick();
+                this.engine.pause();
+                const savedName = localStorage.getItem('qtd_player_name') || '';
+                const savedGrade = localStorage.getItem('qtd_player_grade') || '';
+                const nameInput = document.getElementById('playerNameInput');
+                const gradeInput = document.getElementById('playerGradeInput');
+                if (nameInput) nameInput.value = savedName;
+                if (gradeInput) gradeInput.value = savedGrade;
+                this.modals.playerLoginModal.show();
+            });
+        }
+
+        // Player Login Form Submit (Name -> Subject Select -> Briefing flow)
+        const loginForm = document.getElementById('playerLoginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const nameInput = document.getElementById('playerNameInput');
+                const gradeInput = document.getElementById('playerGradeInput');
+                const name = (nameInput?.value || '').trim() || 'Ученик';
+                const grade = (gradeInput?.value || '').trim();
+
+                localStorage.setItem('qtd_player_name', name);
+                if (grade) {
+                    localStorage.setItem('qtd_player_grade', grade);
+                } else {
+                    localStorage.removeItem('qtd_player_grade');
+                }
+
+                this.updatePlayerNameUI();
+                window.soundManager.playUpgrade();
+                this.modals.playerLoginModal.hide();
+
+                this.showToast(`👋 Привет, <strong>${name}</strong>! Выберите школьный предмет:`, 'success');
+                this.renderLevelSelector();
+                this.modals.levelSelectModal.show();
+            });
+        }
+
         // Sound FX Toggle
         const muteBtn = document.getElementById('muteToggleBtn');
         if (muteBtn) {
@@ -320,18 +393,18 @@ class AppController {
         const resetBtn = document.getElementById('teacherResetBtn');
         if (resetBtn) {
             resetBtn.addEventListener('click', () => {
-                if (confirm('Сбросить все созданные темы и вернуть 3 стандартных школьных предмета?')) {
+                if (confirm('Сбросить все созданные темы и вернуть 8 стандартных школьных предметов?')) {
                     localStorage.removeItem('qtd_teacher_custom_levels');
                     reloadGameLevels();
                     this.loadLevel(0);
                     this.openTeacherModal();
-                    this.showToast('🔄 Все предметы сброшены к стандартным!', 'info');
+                    this.showToast('🔄 Все предметы сброшены к 8 стандартным!', 'info');
                 }
             });
         }
 
         // Safe resume when modals are closed
-        ['turretSelectModal', 'turretInspectorModal', 'levelSelectModal', 'codexModal', 'achievementsModal', 'teacherModal'].forEach(id => {
+        ['playerLoginModal', 'turretSelectModal', 'turretInspectorModal', 'levelSelectModal', 'codexModal', 'achievementsModal', 'teacherModal'].forEach(id => {
             const el = document.getElementById(id);
             if (el) {
                 el.addEventListener('hidden.bs.modal', () => {
@@ -444,7 +517,7 @@ class AppController {
     }
 
     // --- PHASE 1: BRIEFING ---
-    loadLevel(index) {
+    loadLevel(index, showBriefing = true) {
         this.currentLevelIndex = index;
         const level = getLevelConfig(index);
 
@@ -471,7 +544,9 @@ class AppController {
         this.engine.loadLevel(level);
         this.updateBaseHpUI(100, 100);
 
-        this.openBriefingModal(level);
+        if (showBriefing) {
+            this.openBriefingModal(level);
+        }
     }
 
     openBriefingModal(level) {
@@ -1293,27 +1368,36 @@ class AppController {
 
     renderLevelSelector() {
         const container = document.getElementById('levelListContainer');
+        if (!container) return;
         container.innerHTML = '';
 
         GAME_LEVELS.forEach((lvl, idx) => {
             const isCompleted = localStorage.getItem(`qtd_level_${idx}_completed`) === 'true';
             const highScore = localStorage.getItem(`qtd_level_${idx}_highscore`) || '0';
+            const icon = lvl.subjectIcon || '📚';
 
             const card = document.createElement('div');
-            card.className = `card mb-3 p-3 level-select-card ${idx === this.currentLevelIndex ? 'border-primary' : ''}`;
-            card.style.backgroundColor = '#0d131f';
+            card.className = `card mb-3 p-3 level-select-card ${idx === this.currentLevelIndex ? 'border-warning' : 'border-secondary'}`;
+            card.style.backgroundColor = idx === this.currentLevelIndex ? '#172554' : '#0f172a';
             card.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="mb-1 text-light">${lvl.title}</h5>
-                        <p class="text-secondary small mb-1">${lvl.description}</p>
-                        <div class="small">
-                            ${isCompleted ? '<span class="badge bg-success me-2">Пройден ✓</span>' : '<span class="badge bg-secondary me-2">Не пройден</span>'}
-                            <span class="text-info font-monospace">Рекорд: ${highScore} очков</span>
+                <div class="d-flex align-items-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="fs-1">${icon}</span>
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <h6 class="mb-0 text-light fw-bold">${lvl.title}</h6>
+                                ${lvl.isCustom ? '<span class="badge bg-warning text-dark">Учитель</span>' : ''}
+                            </div>
+                            <p class="text-secondary small mb-1" style="font-size: 0.8rem;">${lvl.description}</p>
+                            <div class="d-flex align-items-center gap-2 small">
+                                ${isCompleted ? '<span class="badge bg-success">Пройден ✓</span>' : '<span class="badge bg-secondary">Не пройден</span>'}
+                                <span class="text-warning font-monospace">Рекорд: ${highScore} очков</span>
+                                <span class="text-info font-monospace">Вопросов: ${lvl.questions ? lvl.questions.length : 0}</span>
+                            </div>
                         </div>
                     </div>
-                    <button class="btn ${idx === this.currentLevelIndex ? 'btn-primary' : 'btn-outline-primary'}">
-                        ${idx === this.currentLevelIndex ? 'Текущий' : 'Играть'}
+                    <button class="btn btn-arcade ${idx === this.currentLevelIndex ? 'btn-arcade-green' : 'btn-arcade-cyan'} btn-sm text-nowrap">
+                        ${idx === this.currentLevelIndex ? '▶ ВЫБРАТЬ' : 'ВЫБРАТЬ'}
                     </button>
                 </div>
             `;
@@ -1321,7 +1405,8 @@ class AppController {
             card.querySelector('button').addEventListener('click', () => {
                 window.soundManager.playClick();
                 this.modals.levelSelectModal.hide();
-                this.loadLevel(idx);
+                this.loadLevel(idx, true); // Opens Phase 1 Briefing for the selected subject
+                this.showToast(`📖 Предмет «${lvl.title}» выбран! Изучите чертежи перед боем.`, 'info');
             });
 
             container.appendChild(card);

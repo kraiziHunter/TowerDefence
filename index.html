@@ -27,6 +27,9 @@
                 </div>
 
                 <div class="d-flex gap-2 ms-2">
+                    <button class="btn btn-arcade btn-arcade-cyan btn-sm" id="playerProfileBtn" title="Сменить имя игрока">
+                        👤 <span id="hudPlayerName">ВХОД</span>
+                    </button>
                     <button class="btn btn-arcade btn-arcade-dark btn-sm" id="levelSelectBtn" title="Выбор предмета">
                         ПРЕДМЕТЫ
                     </button>
@@ -114,6 +117,45 @@
 
     <!-- Floating Arcade Notifications -->
     <div id="toastContainer"></div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 0: PLAYER LOGIN / ВХОД УЧЕНИКА В СИСТЕМУ                            -->
+    <!-- ========================================================================= -->
+    <div class="modal fade" id="playerLoginModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-bottom-0 pb-1">
+                    <div>
+                        <span class="badge bg-warning text-dark mb-1">🎮 АРКАДНЫЙ ВХОД: PLAYER 1</span>
+                        <h4 class="modal-title fw-bold text-light">ВВЕДИТЕ ИМЯ УЧЕНИКА</h4>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <p class="text-secondary small mb-3">
+                        Добро пожаловать в обучающую тактическую оборону! Введите ваше имя для ведения статистики, сохранения рекордов и отслеживания прогресса:
+                    </p>
+                    <form id="playerLoginForm">
+                        <div class="mb-3">
+                            <label class="form-label text-warning small fw-bold">ИМЯ ИЛИ ПОЗЫВНОЙ УЧЕНИКА:</label>
+                            <input type="text" class="form-control bg-dark text-warning border-secondary form-control-lg font-monospace text-center fw-bold" id="playerNameInput" placeholder="Например: Артём Волков" maxlength="24" required autofocus>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small">КЛАСС / ГРУППА (НЕОБЯЗАТЕЛЬНО):</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary font-monospace text-center" id="playerGradeInput" placeholder="Например: 7-Б" maxlength="12">
+                        </div>
+                        <button type="submit" class="btn btn-arcade btn-arcade-green w-100 py-3 fs-5" id="confirmPlayerBtn">
+                            ВХОД И ВЫБОР ПРЕДМЕТА ▶
+                        </button>
+                    </form>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <small class="text-secondary w-100 text-center font-monospace" style="font-size: 0.7rem;">
+                        РЕЖИМ ОБУЧЕНИЯ: АКТИВНОЕ ВОСПРОИЗВЕДЕНИЕ ТЕОРИИ
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- ========================================================================= -->
     <!-- MODAL 1: PHASE 1 BRIEFING / ОБУЧАЮЩИЕ КАРТОЧКИ                            -->
